@@ -388,7 +388,8 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.Spacing();
 
         ImGui.PushStyleColor(ImGuiCol.ChildBg, Panel);
-        if (ImGui.BeginChild("##feedStepList", new Vector2(0, 350 * ImGuiHelpers.GlobalScale), true))
+        if (ImGui.BeginChild("##feedStepList", new Vector2(0, 350 * ImGuiHelpers.GlobalScale), true,
+                ImGuiWindowFlags.AlwaysVerticalScrollbar))
         {
             var rgb = new RgbColor(plan.StartR, plan.StartG, plan.StartB);
             var visibleCount = 0;
@@ -454,17 +455,16 @@ public sealed class MainWindow : Window, IDisposable
 
         ImGui.PushID(index);
         ImGui.PushStyleColor(ImGuiCol.ChildBg, rowBackground);
-        if (ImGui.BeginChild("##feedListRow", new Vector2(0, 54 * ImGuiHelpers.GlobalScale), true,
-                ImGuiWindowFlags.NoScrollbar))
+        if (ImGui.BeginChild("##feedListRow", new Vector2(0, 72 * ImGuiHelpers.GlobalScale), true,
+                ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
         {
-            if (ImGui.BeginTable("##feedListRowColumns", 6, ImGuiTableFlags.SizingStretchProp))
+            if (ImGui.BeginTable("##feedListRowColumns", 4, ImGuiTableFlags.SizingStretchProp))
             {
-                ImGui.TableSetupColumn("Step", ImGuiTableColumnFlags.WidthFixed, 52 * ImGuiHelpers.GlobalScale);
-                ImGui.TableSetupColumn("FruitIcon", ImGuiTableColumnFlags.WidthFixed, 38 * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("Step", ImGuiTableColumnFlags.WidthFixed, 46 * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("FruitIcon", ImGuiTableColumnFlags.WidthFixed, 42 * ImGuiHelpers.GlobalScale);
                 ImGui.TableSetupColumn("Fruit", ImGuiTableColumnFlags.WidthStretch, 1f);
-                ImGui.TableSetupColumn("Status", ImGuiTableColumnFlags.WidthFixed, 126 * ImGuiHelpers.GlobalScale);
-                ImGui.TableSetupColumn("Manual", ImGuiTableColumnFlags.WidthFixed, 82 * ImGuiHelpers.GlobalScale);
-                ImGui.TableSetupColumn("Auto", ImGuiTableColumnFlags.WidthFixed, 66 * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("StatusAndControls", ImGuiTableColumnFlags.WidthFixed,
+                    220 * ImGuiHelpers.GlobalScale);
                 ImGui.TableNextRow();
 
                 ImGui.TableNextColumn();
@@ -472,7 +472,7 @@ public sealed class MainWindow : Window, IDisposable
                 ImGui.TextColored(statusColor, $"#{index + 1}");
 
                 ImGui.TableNextColumn();
-                DrawFruitIcon(fruit, 30);
+                DrawFruitIcon(fruit, 34);
 
                 ImGui.TableNextColumn();
                 ImGui.AlignTextToFramePadding();
@@ -482,16 +482,13 @@ public sealed class MainWindow : Window, IDisposable
                 ImGui.TableNextColumn();
                 ImGui.AlignTextToFramePadding();
                 ImGui.TextColored(statusColor, status);
-
-                ImGui.TableNextColumn();
                 var manual = step.ManualCompleted;
                 var canEdit = index == next || manual || step.AutoCompleted;
                 ImGui.BeginDisabled(!canEdit);
                 if (ImGui.Checkbox("Manual##feedListManual", ref manual))
                     plugin.SetManualStep(index, manual);
                 ImGui.EndDisabled();
-
-                ImGui.TableNextColumn();
+                ImGui.SameLine();
                 var automatic = step.AutoCompleted;
                 ImGui.BeginDisabled();
                 ImGui.Checkbox("Auto##feedListAuto", ref automatic);
