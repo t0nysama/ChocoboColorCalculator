@@ -12,7 +12,7 @@ A Dalamud API 15 plugin that calculates and tracks an ordered companion-chocobo 
 - A default **Safe center** target mode. It finds a reachable point inside the target's nearest-color region with more separation from neighboring named colors. This avoids known close-color errors such as Currant Purple resolving as Grape Purple.
 - Exact ordered feed list, total fruit counts, simulated RGB after every step, and predicted resulting named color.
 - Independent manual and automatic checkboxes for every step.
-- Automatic progress from client-localized Progress-channel feeding messages; unexpected fruit is detected and does not silently advance the route.
+- Automatic progress from FFXIV's structured, client-localized chocobo-snack log message, with a rendered-chat fallback; unexpected fruit is detected and does not silently advance the route.
 - Persistent route and progress across plugin/game restarts, undo, reset, and optional next-step chat reminders.
 
 ## Accuracy and the unavoidable limitation

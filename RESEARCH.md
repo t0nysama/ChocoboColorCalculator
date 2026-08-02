@@ -8,7 +8,7 @@ Checked 2026-08-02.
 - [Official UI guide](https://eu.finalfantasyxiv.com/uiguide/faq/faq-chocobo/chocobo_color.html): current confirmation of fruit effects and stable behavior.
 - [Lulu's Tools algorithm explanation](https://ffxiv.pf-n.co/chocobo-color/about): ±5 vectors, channel clamping, Euclidean nearest-color assumption, lookahead-3 reasoning, lattice error, and documented Honey Yellow/Celeste Green → Currant Purple failures.
 - [Community chocobo color table](https://ffxiv.consolegameswiki.com/wiki/Chocobo_Colors): the full named RGB palette and fruit vectors.
-- [Current Dalamud getting-started guide](https://dalamud.dev/plugin-development/getting-started/) and [API 15 notes](https://dalamud.dev/versions/v15/): project SDK and current chat-event interfaces.
+- [Current Dalamud getting-started guide](https://dalamud.dev/plugin-development/getting-started/), [IChatGui API](https://dalamud.dev/api/Dalamud.Plugin.Services/Interfaces/IChatGui/), and [API 15 notes](https://dalamud.dev/versions/v15/): project SDK and current structured log-message interfaces.
 - [XIVAPI v2 game data](https://v2.xivapi.com/): item rows 8157–8162 were checked for the six fruits.
 
 ## Verified fruit data
@@ -36,3 +36,7 @@ References disagree on Desert Yellow: the community page prose has used 216/180/
 4. Simulate the final ordered route again and report both endpoint and nearest named color. The verifier checks all 7,225 named start/target pairs.
 
 The nearest-color rule is a well-supported community model, not an officially published Square Enix formula. The UI describes that honestly.
+
+## Automatic feed detection
+
+Automatic tracking listens for FFXIV `LogMessage` row 4495 (the companion chocobo "devours" message) through Dalamud's structured `IChatGui.LogMessage` event. It reads the client-localized string parameters to identify the consumed fruit. A corrected log-kind 57 chat listener is retained as a rendered-message fallback, and a short debounce prevents the two callbacks from advancing the route twice.

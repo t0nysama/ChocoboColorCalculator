@@ -17,6 +17,8 @@ namespace ChocoboColorCalculator;
 public sealed class Plugin : IDalamudPlugin
 {
     private const string CommandName = "/chococolor";
+    private const uint ChocoboSnackLogMessageId = 4495;
+    private const XivChatType ChocoboSnackLogKind = (XivChatType)57;
     private static readonly TimeSpan DetectionDebounce = TimeSpan.FromMilliseconds(400);
 
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
@@ -52,11 +54,13 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw += windowSystem.Draw;
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleMainUi;
+        ChatGui.LogMessage += OnLogMessage;
         ChatGui.ChatMessage += OnChatMessage;
     }
 
     public void Dispose()
     {
+        ChatGui.LogMessage -= OnLogMessage;
         ChatGui.ChatMessage -= OnChatMessage;
         PluginInterface.UiBuilder.Draw -= windowSystem.Draw;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
@@ -158,29 +162,45 @@ public sealed class Plugin : IDalamudPlugin
     private void OnCommand(string command, string arguments) => mainWindow.Toggle();
     private void ToggleMainUi() => mainWindow.Toggle();
 
-    private void OnChatMessage(IHandleableChatMessage message)
+    private void OnLogMessage(ILogMessage message)
     {
-        if (!Configuration.AutoTrackingEnabled || message.LogKind != XivChatType.Progress)
+        if (!Configuration.AutoTrackingEnabled || message.LogMessageId != ChocoboSnackLogMessageId)
             return;
 
+        var parameters = new List<string>(message.ParameterCount);
+        for (var index = 0; index < message.ParameterCount; index++)
+        {
+            if (message.TryGetStringParameter(index, out var value))
+                parameters.Add(value.ToString());
+        }
+
+        DetectAndTrackFruit(parameters);
+    }
+
+    private void OnChatMessage(IHandleableChatMessage message)
+    {
+        if (!Configuration.AutoTrackingEnabled || message.LogKind != ChocoboSnackLogKind)
+            return;
+
+        DetectAndTrackFruit([message.Message.TextValue]);
+    }
+
+    private void DetectAndTrackFruit(IEnumerable<string> textFragments)
+    {
+        var detected = FruitMessageDetector.Detect(textFragments, LocalizedFruitName);
+        if (detected is null)
+            return;
+
+        TrackDetectedFruit(detected.Value);
+    }
+
+    private void TrackDetectedFruit(FruitKind detected)
+    {
         var plan = Configuration.ActivePlan;
         var next = plan?.NextStepIndex ?? -1;
         if (plan is null || next < 0)
             return;
 
-        var text = message.Message.TextValue;
-        FruitKind? detected = null;
-        foreach (var fruit in ChocoboData.Fruits)
-        {
-            if (text.Contains(LocalizedFruitName(fruit.Kind), StringComparison.CurrentCultureIgnoreCase))
-            {
-                detected = fruit.Kind;
-                break;
-            }
-        }
-
-        if (detected is null)
-            return;
         var now = DateTime.UtcNow;
         if (lastDetectedFruit == detected && now - lastDetectionUtc < DetectionDebounce)
             return;
@@ -191,7 +211,7 @@ public sealed class Plugin : IDalamudPlugin
         if (detected != expected)
         {
             var notice =
-                $"Detected {LocalizedFruitName(detected.Value)}, but step {next + 1} expects " +
+                $"Detected {LocalizedFruitName(detected)}, but step {next + 1} expects " +
                 $"{LocalizedFruitName(expected)}. Progress was not advanced.";
             Configuration.LastDetectionNotice = notice;
             Configuration.Save();

@@ -13,6 +13,19 @@ Require(ChocoboData.Colors.Select(c => c.Name).Distinct().Count() == 85, "Color 
 Require(ChocoboData.Fruits.Count == 6, "Expected six color-changing fruits.");
 Require(ChocoboData.Fruits.Select(f => f.ItemId).Distinct().Count() == 6, "Fruit item IDs must be unique.");
 
+foreach (var fruit in ChocoboData.Fruits)
+{
+    var detected = FruitMessageDetector.Detect([$"Sunflower devours the {fruit.Name.ToLowerInvariant()}."]);
+    Require(detected == fruit.Kind, $"Failed to detect {fruit.Name} from a feeding log message.");
+}
+
+Require(
+    FruitMessageDetector.Detect(["Valfruit devours the Doman plum."]) == FruitKind.DomanPlum,
+    "The consumed fruit must take precedence when a chocobo name is also a fruit name.");
+Require(
+    FruitMessageDetector.Detect(["You tend to your chocobo."]) is null,
+    "Unrelated stable messages must not be detected as fruit feedings.");
+
 var calculator = new RouteCalculator();
 var failures = new List<string>();
 var longest = 0;
