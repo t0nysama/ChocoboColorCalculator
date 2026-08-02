@@ -3,18 +3,18 @@
     "Author": "Null",
     "Name": "Chocobo Color Calculator",
     "InternalName": "ChocoboColorCalculator",
-    "AssemblyVersion": "0.3.4.0",
+    "AssemblyVersion": "0.3.5.0",
     "RepoUrl": "https://github.com/t0nysama/ChocoboColorCalculator",
     "IconUrl": "https://raw.githubusercontent.com/t0nysama/ChocoboColorCalculator/79e26fa213c3934ec5d9246cbffc6fdb14423809/images/icon.png",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 15,
     "Punchline": "Plan and track an accurate chocobo color feeding route in game.",
     "Description": "Calculates and tracks ordered fruit routes between companion chocobo colors.",
-    "Changelog": "Fixed automatic feeding detection by listening for FFXIV's structured chocobo-snack log message, with a corrected rendered-chat fallback and duplicate-event protection.",
+    "Changelog": "Improved route accuracy with a reliable-target policy. Desert Yellow to Soot Black now uses the established 19-apple, 23-pear, 32-berry route, with narrow-color guidance and new regression coverage.",
     "IsHide": false,
     "IsTestingExclusive": false,
     "DownloadLinkInstall": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
     "DownloadLinkUpdate": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
-    "LastUpdate": "1785686249"
+    "LastUpdate": "1785708203"
   }
 ]

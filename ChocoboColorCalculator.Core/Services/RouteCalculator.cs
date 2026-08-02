@@ -8,6 +8,7 @@ public sealed class RouteCalculator
     private const int Lookahead = 3;
     private const int MaxSteps = 512;
     private const int SafeSearchRadius = 20;
+    private const double MinimumReliableMargin = 5;
 
     private readonly IReadOnlyList<FruitKind[]> paths;
 
@@ -32,19 +33,28 @@ public sealed class RouteCalculator
         var steps = CalculateRoute(start.Rgb, aim, out var endpoint, out var usedFallback);
         var predicted = ChocoboData.NearestColor(endpoint);
         var margin = ClassificationMargin(endpoint, target);
-        string? warning = null;
+        var warnings = new List<string>();
 
         if (!ReferenceEquals(predicted, target) && predicted.Name != target.Name)
         {
-            warning = $"The closest reachable endpoint resolves to {predicted.Name}; " +
-                      "try Safe center mode or reset to Desert Yellow with a Han Lemon.";
-        }
-        else if (start.Name != "Desert Yellow")
-        {
-            warning = "The game does not expose the hidden RGB value. A selected named starting " +
-                      "color is necessarily an estimate; a Han Lemon reset gives the most reliable baseline.";
+            warnings.Add($"The closest reachable endpoint resolves to {predicted.Name}; " +
+                         "try Reliable target mode or reset to Desert Yellow with a Han Lemon.");
         }
 
+        if (start.Name != "Desert Yellow")
+        {
+            warnings.Add("The game does not expose the hidden RGB value. A selected named starting " +
+                         "color is necessarily an estimate; a Han Lemon reset gives the most reliable baseline.");
+        }
+
+        if (predicted.Name == target.Name && margin < 7)
+        {
+            warnings.Add($"{target.Name} has a narrow color region and the exact per-fruit variance is not " +
+                         "published. Do not add fruit just because no feather-growth message appeared; if the " +
+                         "result misses, calculate a correction from the resulting color instead of resetting.");
+        }
+
+        var warning = warnings.Count == 0 ? null : string.Join(" ", warnings);
         return new(start, target, aim, endpoint, predicted, steps, margin, usedFallback, warning);
     }
 
@@ -67,9 +77,14 @@ public sealed class RouteCalculator
 
     private RgbColor FindSafeAimPoint(RgbColor start, ChocoboColor target)
     {
-        var best = target.Rgb;
-        var bestMargin = double.NegativeInfinity;
-        var bestCost = int.MaxValue;
+        var closest = target.Rgb;
+        var closestTargetDistance = long.MaxValue;
+        var closestMargin = double.NegativeInfinity;
+        var closestCost = int.MaxValue;
+        var safest = target.Rgb;
+        var safestMargin = double.NegativeInfinity;
+        var safestTargetDistance = long.MaxValue;
+        var safestCost = int.MaxValue;
 
         for (var r = FirstMatchingResidue(Math.Max(0, target.Rgb.R - SafeSearchRadius), start.R);
              r <= Math.Min(255, target.Rgb.R + SafeSearchRadius);
@@ -88,17 +103,38 @@ public sealed class RouteCalculator
                 continue;
 
             var margin = ClassificationMargin(candidate, target);
+            var targetDistance = candidate.DistanceSquared(target.Rgb);
             var cost = EstimatedFruitCount(start, candidate);
-            if (margin > bestMargin + 0.0001 ||
-                (Math.Abs(margin - bestMargin) < 0.0001 && cost < bestCost))
+
+            if (targetDistance < closestTargetDistance ||
+                (targetDistance == closestTargetDistance && margin > closestMargin + 0.0001) ||
+                (targetDistance == closestTargetDistance && Math.Abs(margin - closestMargin) < 0.0001 && cost < closestCost))
             {
-                best = candidate;
-                bestMargin = margin;
-                bestCost = cost;
+                closest = candidate;
+                closestTargetDistance = targetDistance;
+                closestMargin = margin;
+                closestCost = cost;
+            }
+
+            if (margin > safestMargin + 0.0001 ||
+                (Math.Abs(margin - safestMargin) < 0.0001 && targetDistance < safestTargetDistance) ||
+                (Math.Abs(margin - safestMargin) < 0.0001 && targetDistance == safestTargetDistance && cost < safestCost))
+            {
+                safest = candidate;
+                safestMargin = margin;
+                safestTargetDistance = targetDistance;
+                safestCost = cost;
             }
         }
 
-        return best;
+        if (closestMargin >= MinimumReliableMargin)
+        {
+            _ = CalculateRoute(start, closest, out var endpoint, out _);
+            if (endpoint == closest)
+                return closest;
+        }
+
+        return safest;
     }
 
     private static int FirstMatchingResidue(int minimum, int reference)

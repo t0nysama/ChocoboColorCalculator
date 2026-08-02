@@ -178,17 +178,17 @@ public sealed class MainWindow : Window, IDisposable
             var safe = plugin.Configuration.UseSafeCenter;
             if (ImGui.BeginTable("##modeChoices", 2, ImGuiTableFlags.SizingStretchProp))
             {
-                ImGui.TableSetupColumn("Safe", ImGuiTableColumnFlags.WidthStretch, 2f);
+                ImGui.TableSetupColumn("Reliable", ImGuiTableColumnFlags.WidthStretch, 2f);
                 ImGui.TableSetupColumn("Exact", ImGuiTableColumnFlags.WidthStretch, 1f);
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                if (ImGui.RadioButton("Safe center", safe))
+                if (ImGui.RadioButton("Reliable target", safe))
                 {
                     plugin.Configuration.UseSafeCenter = true;
                     plugin.Configuration.Save();
                 }
                 ImGui.SameLine();
-                ImGui.TextDisabled("Recommended - more separation from neighboring colors");
+                ImGui.TextDisabled("Recommended - closest reachable point in the target region");
 
                 ImGui.TableNextColumn();
                 if (ImGui.RadioButton("Published RGB", !safe))
@@ -197,7 +197,7 @@ public sealed class MainWindow : Window, IDisposable
                     plugin.Configuration.Save();
                 }
                 if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("Aims directly at the published swatch. This can be less forgiving for very close colors.");
+                    ImGui.SetTooltip("Aims directly at the published swatch without first requiring a reachable point inside its color region.");
                 ImGui.EndTable();
             }
         }
@@ -728,9 +728,9 @@ public sealed class MainWindow : Window, IDisposable
 
         DrawHelpCard(
             "2. FOLLOW THE ORDER",
-            "Every fruit changes all three hidden RGB channels by 5. Channels clamp at 0 and 255, so " +
-            "the same fruit totals in a different order can produce a different endpoint. Feed the list " +
-            "from top to bottom, one item per step.",
+            "The accepted model estimates each fruit at 5 RGB points. Channels clamp at 0 and 255, so " +
+            "order matters. Feed only the listed items from top to bottom. A feather-growth message means " +
+            "a color boundary was crossed; its absence is not a reason to add extra fruit.",
             PanelRaised);
 
         DrawHelpCard(
@@ -749,11 +749,11 @@ public sealed class MainWindow : Window, IDisposable
             GreenPanel);
 
         ImGui.Spacing();
-        ImGui.TextColored(Gold, "WHY SAFE CENTER?");
+        ImGui.TextColored(Gold, "WHY RELIABLE TARGET?");
         ImGui.TextWrapped(
-            "Named colors occupy regions around published RGB swatches. Safe center aims for a reachable " +
-            "point with extra distance from neighboring regions, improving reliability for close pairs such " +
-            "as Currant Purple and Grape Purple.");
+            "Named colors occupy regions around published RGB swatches. Reliable target chooses the closest " +
+            "reachable point that still resolves to the desired color. This stays faithful to observed recipes " +
+            "while avoiding endpoints that resolve to a neighboring color under the accepted model.");
     }
 
     private static void DrawHelpCard(string title, string body, Vector4 background)

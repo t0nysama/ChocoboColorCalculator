@@ -9,7 +9,7 @@ A Dalamud API 15 plugin that calculates and tracks an ordered companion-chocobo 
 - A card-based interface with large color previews, a prominent next-feed panel, icon-backed fruit totals, route status colors, and a compact help walkthrough.
 - The six color fruits with verified game-data item row IDs and the accepted ±5 RGB effects.
 - Per-fruit 0–255 clamping and a three-fruit lookahead route solver.
-- A default **Safe center** target mode. It finds a reachable point inside the target's nearest-color region with more separation from neighboring named colors. This avoids known close-color errors such as Currant Purple resolving as Grape Purple.
+- A default **Reliable target** mode. It prefers the reachable point closest to the published swatch, then falls back to a deeper point when the closest route is too near a neighboring color or cannot reach its selected endpoint. This preserves known close-color fixes while matching the established 19-apple, 23-pear, 32-berry Desert Yellow to Soot Black recipe.
 - Exact ordered feed list, total fruit counts, simulated RGB after every step, and predicted resulting named color.
 - Independent manual and automatic checkboxes for every step.
 - Automatic progress from FFXIV's structured, client-localized chocobo-snack log message, with a rendered-chat fallback; unexpected fruit is detected and does not silently advance the route.
@@ -17,9 +17,9 @@ A Dalamud API 15 plugin that calculates and tracks an ordered companion-chocobo 
 
 ## Accuracy and the unavoidable limitation
 
-The accepted model changes the hidden RGB channels by 5 per fruit, applies each fruit in order, clamps each channel to 0–255, and then maps the endpoint to the nearest named color by Euclidean RGB distance. The route engine simulates those rules exactly.
+The accepted model changes the hidden RGB channels by approximately 5 per fruit, applies each fruit in order, clamps each channel to 0–255, and then maps the endpoint to the nearest named color by Euclidean RGB distance. The route engine simulates the established ±5 model exactly, but Square Enix has never published the underlying formula and community experiments have reported per-channel shifts around 3–6. No calculator can guarantee a tight color such as Soot Black in one attempt.
 
-FFXIV does not expose a previously recolored chocobo's exact hidden RGB values. A visible named color can therefore only supply an estimated starting point. For the most reliable first-attempt result, feed a **Han Lemon**, confirm **Desert Yellow**, and calculate from there. The UI calls this out instead of claiming certainty the game cannot provide.
+FFXIV does not expose a previously recolored chocobo's exact hidden RGB values. A visible named color can therefore only supply an estimated starting point. For the most reliable first attempt, feed a **Han Lemon**, confirm **Desert Yellow**, and calculate from there. Feed exactly the ordered list: the feather-growth message indicates that a color boundary was crossed, not that an unannounced fruit failed, so do not add extra fruit solely because that message did not appear. If a narrow target misses, select the resulting visible color and calculate a short correction instead of resetting again.
 
 ## Build
 

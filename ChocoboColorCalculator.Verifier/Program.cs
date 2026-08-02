@@ -60,10 +60,34 @@ Require(failures.Count == 0, string.Join(Environment.NewLine, failures.Take(30))
 var honey = ChocoboData.Colors.Single(c => c.Name == "Honey Yellow");
 var celeste = ChocoboData.Colors.Single(c => c.Name == "Celeste Green");
 var currant = ChocoboData.Colors.Single(c => c.Name == "Currant Purple");
+var desert = ChocoboData.Colors.Single(c => c.Name == "Desert Yellow");
+var soot = ChocoboData.Colors.Single(c => c.Name == "Soot Black");
+var desertToSoot = calculator.Calculate(desert, soot);
 Require(calculator.Calculate(honey, currant).PredictedColor.Name == "Currant Purple",
     "Honey Yellow -> Currant Purple regression.");
 Require(calculator.Calculate(celeste, currant).PredictedColor.Name == "Currant Purple",
     "Celeste Green -> Currant Purple regression.");
+Require(desertToSoot.Endpoint == new RgbColor(39, 40, 37),
+    $"Desert Yellow -> Soot Black should use the closest reliable endpoint, got {desertToSoot.Endpoint}.");
+Require(desertToSoot.Steps.Count(kind => kind == FruitKind.XelphatolApple) == 19,
+    "Desert Yellow -> Soot Black should use 19 Xelphatol apples.");
+Require(desertToSoot.Steps.Count(kind => kind == FruitKind.MamookPear) == 23,
+    "Desert Yellow -> Soot Black should use 23 Mamook pears.");
+Require(desertToSoot.Steps.Count(kind => kind == FruitKind.OGhomoroBerries) == 32,
+    "Desert Yellow -> Soot Black should use 32 O'Ghomoro berries.");
+var sootRouteRgb = desert.Rgb;
+foreach (var kind in desertToSoot.Steps)
+{
+    Require(!ChocoboData.Fruit(kind).WouldClamp(sootRouteRgb),
+        $"Desert Yellow -> Soot Black must not clamp while feeding {kind} from {sootRouteRgb}.");
+    sootRouteRgb = ChocoboData.Fruit(kind).Apply(sootRouteRgb);
+}
 
-Console.WriteLine($"Verified {pairCount:N0} color pairs; longest safe route: {longest} fruits.");
+Console.WriteLine($"Verified {pairCount:N0} color pairs; longest reliable route: {longest} fruits.");
 Console.WriteLine($"Smallest endpoint classification margin: {minimumMargin:F2} ({minimumMarginPair}).");
+Console.WriteLine(
+    $"Desert Yellow -> Soot Black: {desertToSoot.Steps.Count} fruits, " +
+    $"aim {desertToSoot.AimPoint}, endpoint {desertToSoot.Endpoint}, " +
+    $"margin {desertToSoot.ClassificationMargin:F2}.");
+Console.WriteLine(
+    string.Join(", ", desertToSoot.Steps.GroupBy(kind => kind).Select(group => $"{group.Key} x{group.Count()}")));
