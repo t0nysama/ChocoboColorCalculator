@@ -3,18 +3,18 @@
     "Author": "Null",
     "Name": "Chocobo Color Calculator",
     "InternalName": "ChocoboColorCalculator",
-    "AssemblyVersion": "0.3.0.0",
+    "AssemblyVersion": "0.3.1.0",
     "RepoUrl": "https://github.com/t0nysama/ChocoboColorCalculator",
-    "IconUrl": "https://raw.githubusercontent.com/t0nysama/ChocoboColorCalculator/main/images/icon.png",
+    "IconUrl": "https://raw.githubusercontent.com/t0nysama/ChocoboColorCalculator/79e26fa213c3934ec5d9246cbffc6fdb14423809/images/icon.png",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 15,
     "Punchline": "Plan and track an accurate chocobo color feeding route in game.",
     "Description": "Calculates and tracks ordered fruit routes between companion chocobo colors.",
-    "Changelog": "Added a persistent Card/List view toggle for feed progress. List view shows every step with synchronized manual and automatic completion indicators.",
+    "Changelog": "Corrected the embedded author to Null and changed the icon to an immutable URL so Dalamud downloads the configured plugin artwork.",
     "IsHide": false,
     "IsTestingExclusive": false,
     "DownloadLinkInstall": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
     "DownloadLinkUpdate": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
-    "LastUpdate": "1785672535"
+    "LastUpdate": "1785673404"
   }
 ]

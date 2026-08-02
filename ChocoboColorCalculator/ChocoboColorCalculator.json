@@ -3,7 +3,7 @@
   "Name": "Chocobo Color Calculator",
   "InternalName": "ChocoboColorCalculator",
   "RepoUrl": "https://github.com/t0nysama/ChocoboColorCalculator",
-  "IconUrl": "https://raw.githubusercontent.com/t0nysama/ChocoboColorCalculator/main/images/icon.png",
+  "IconUrl": "https://raw.githubusercontent.com/t0nysama/ChocoboColorCalculator/79e26fa213c3934ec5d9246cbffc6fdb14423809/images/icon.png",
   "Punchline": "Plan and track an accurate chocobo color feeding route in game.",
   "Description": "Calculates an ordered fruit route between all 85 companion chocobo colors. Includes manual and automatic per-feed progress tracking, route simulation, clamping-safe ordering, and a safer target mode. Open with /chococolor.",
   "ApplicableVersion": "any",
