@@ -1,0 +1,112 @@
+using ChocoboColorCalculator.Core.Models;
+
+namespace ChocoboColorCalculator.Core.Data;
+
+public static class ChocoboData
+{
+    public static readonly IReadOnlyList<Fruit> Fruits =
+    [
+        new(FruitKind.XelphatolApple, "Xelphatol Apple", 8157, new(5, -5, -5)),
+        new(FruitKind.MamookPear, "Mamook Pear", 8159, new(-5, 5, -5)),
+        new(FruitKind.OGhomoroBerries, "O'Ghomoro Berries", 8161, new(-5, -5, 5)),
+        new(FruitKind.DomanPlum, "Doman Plum", 8158, new(-5, 5, 5)),
+        new(FruitKind.Valfruit, "Valfruit", 8160, new(5, -5, 5)),
+        new(FruitKind.CieldalaesPineapple, "Cieldalaes Pineapple", 8162, new(5, 5, -5)),
+    ];
+
+    public static readonly IReadOnlyList<ChocoboColor> Colors =
+    [
+        new("Desert Yellow", new(219, 180, 87)),
+        new("Snow White", new(228, 223, 208)),
+        new("Ash Grey", new(172, 168, 162)),
+        new("Goobbue Grey", new(137, 135, 132)),
+        new("Slate Grey", new(101, 101, 101)),
+        new("Charcoal Grey", new(72, 71, 66)),
+        new("Soot Black", new(43, 41, 35)),
+        new("Rose Pink", new(230, 159, 150)),
+        new("Lilac Purple", new(131, 105, 105)),
+        new("Rolanberry Red", new(91, 23, 41)),
+        new("Dalamud Red", new(120, 26, 26)),
+        new("Rust Red", new(98, 34, 7)),
+        new("Wine Red", new(69, 21, 17)),
+        new("Coral Pink", new(204, 108, 94)),
+        new("Blood Red", new(145, 59, 48)),
+        new("Salmon Pink", new(228, 170, 138)),
+        new("Sunset Orange", new(183, 92, 45)),
+        new("Mesa Red", new(125, 57, 6)),
+        new("Bark Brown", new(106, 75, 55)),
+        new("Chocolate Brown", new(110, 61, 36)),
+        new("Russet Brown", new(79, 45, 31)),
+        new("Kobold Brown", new(48, 33, 27)),
+        new("Cork Brown", new(201, 145, 86)),
+        new("Qiqirn Brown", new(153, 110, 63)),
+        new("Opo-Opo Brown", new(123, 92, 45)),
+        new("Aldgoat Brown", new(162, 135, 92)),
+        new("Pumpkin Orange", new(197, 116, 36)),
+        new("Acorn Brown", new(142, 88, 27)),
+        new("Orchard Brown", new(100, 66, 22)),
+        new("Chestnut Brown", new(61, 41, 13)),
+        new("Gobbiebag Brown", new(185, 164, 137)),
+        new("Shale Brown", new(146, 129, 108)),
+        new("Mole Brown", new(97, 82, 69)),
+        new("Loam Brown", new(63, 51, 41)),
+        new("Bone White", new(235, 211, 160)),
+        new("Ul Brown", new(183, 163, 112)),
+        new("Honey Yellow", new(250, 198, 43)),
+        new("Millioncorn Yellow", new(228, 158, 52)),
+        new("Coeurl Yellow", new(188, 136, 4)),
+        new("Cream Yellow", new(242, 215, 112)),
+        new("Halatali Yellow", new(165, 132, 48)),
+        new("Raisin Brown", new(64, 51, 17)),
+        new("Mud Green", new(88, 82, 48)),
+        new("Sylph Green", new(187, 187, 138)),
+        new("Lime Green", new(171, 176, 84)),
+        new("Moss Green", new(112, 115, 38)),
+        new("Meadow Green", new(139, 156, 99)),
+        new("Olive Green", new(75, 82, 50)),
+        new("Marsh Green", new(50, 54, 33)),
+        new("Apple Green", new(149, 174, 92)),
+        new("Cactuar Green", new(101, 130, 65)),
+        new("Hunter Green", new(40, 75, 38)),
+        new("Ochu Green", new(64, 99, 57)),
+        new("Adamantoise Green", new(95, 117, 88)),
+        new("Nophica Green", new(59, 77, 60)),
+        new("Deepwood Green", new(30, 42, 33)),
+        new("Celeste Green", new(150, 189, 185)),
+        new("Turquoise Green", new(67, 114, 144)),
+        new("Morbol Green", new(31, 70, 70)),
+        new("Ice Blue", new(178, 196, 206)),
+        new("Sky Blue", new(131, 176, 210)),
+        new("Seafog Blue", new(100, 129, 160)),
+        new("Peacock Blue", new(59, 104, 134)),
+        new("Rhotano Blue", new(28, 61, 84)),
+        new("Corpse Blue", new(142, 155, 172)),
+        new("Ceruleum Blue", new(79, 87, 102)),
+        new("Woad Blue", new(47, 56, 81)),
+        new("Ink Blue", new(26, 31, 39)),
+        new("Raptor Blue", new(91, 127, 192)),
+        new("Othard Blue", new(47, 88, 137)),
+        new("Storm Blue", new(35, 65, 114)),
+        new("Void Blue", new(17, 41, 68)),
+        new("Royal Blue", new(39, 48, 103)),
+        new("Midnight Blue", new(24, 25, 55)),
+        new("Shadow Blue", new(55, 55, 71)),
+        new("Abyssal Blue", new(49, 45, 87)),
+        new("Lavender Purple", new(135, 127, 174)),
+        new("Gloom Purple", new(81, 69, 96)),
+        new("Currant Purple", new(50, 44, 59)),
+        new("Iris Purple", new(183, 158, 188)),
+        new("Grape Purple", new(59, 42, 61)),
+        new("Lotus Pink", new(254, 206, 245)),
+        new("Colibri Pink", new(220, 155, 202)),
+        new("Plum Purple", new(121, 82, 108)),
+        new("Regal Purple", new(102, 48, 78)),
+    ];
+
+    public static Fruit Fruit(FruitKind kind) => Fruits[(int)kind];
+
+    public static ChocoboColor NearestColor(RgbColor rgb) => Colors
+        .OrderBy(color => color.Rgb.DistanceSquared(rgb))
+        .ThenBy(color => color.Name, StringComparer.Ordinal)
+        .First();
+}

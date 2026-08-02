@@ -1,0 +1,14 @@
+{
+  "Author": "tony",
+  "Name": "Chocobo Color Calculator",
+  "InternalName": "ChocoboColorCalculator",
+  "Punchline": "Plan and track an accurate chocobo color feeding route in game.",
+  "Description": "Calculates an ordered fruit route between all 85 companion chocobo colors. Includes manual and automatic per-feed progress tracking, route simulation, clamping-safe ordering, and a safer target mode. Open with /chococolor.",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "chocobo",
+    "color",
+    "calculator",
+    "stable"
+  ]
+}
