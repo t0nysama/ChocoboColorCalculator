@@ -1,0 +1,18 @@
+[
+  {
+    "Author": "Null",
+    "Name": "Chocobo Color Calculator",
+    "InternalName": "ChocoboColorCalculator",
+    "AssemblyVersion": "0.2.0.0",
+    "RepoUrl": "https://github.com/t0nysama/ChocoboColorCalculator",
+    "ApplicableVersion": "any",
+    "DalamudApiLevel": 15,
+    "Punchline": "Plan and track an accurate chocobo color feeding route in game.",
+    "Description": "Calculates and tracks ordered fruit routes between companion chocobo colors.",
+    "IsHide": false,
+    "IsTestingExclusive": false,
+    "DownloadLinkInstall": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
+    "DownloadLinkUpdate": "https://github.com/Yt0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
+    "LastUpdate": "1785669578"
+  }
+]
