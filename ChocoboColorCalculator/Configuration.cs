@@ -12,6 +12,7 @@ public sealed class Configuration : IPluginConfiguration
     public bool AutoTrackingEnabled { get; set; } = true;
     public bool PrintNextStepToChat { get; set; } = true;
     public bool HideCompletedSteps { get; set; }
+    public bool UseFeedListView { get; set; }
     public ActivePlanState? ActivePlan { get; set; }
     public string? LastDetectionNotice { get; set; }
 

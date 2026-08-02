@@ -13,12 +13,14 @@ public sealed class MainWindow : Window, IDisposable
 {
     private static readonly Vector4 Gold = new(0.94f, 0.72f, 0.22f, 1f);
     private static readonly Vector4 Green = new(0.35f, 0.86f, 0.52f, 1f);
+    private static readonly Vector4 Blue = new(0.30f, 0.70f, 1.00f, 1f);
     private static readonly Vector4 Red = new(0.95f, 0.42f, 0.39f, 1f);
     private static readonly Vector4 Muted = new(0.62f, 0.65f, 0.70f, 1f);
     private static readonly Vector4 Panel = new(0.075f, 0.085f, 0.105f, 0.94f);
     private static readonly Vector4 PanelRaised = new(0.105f, 0.12f, 0.145f, 0.96f);
     private static readonly Vector4 GoldPanel = new(0.18f, 0.145f, 0.065f, 0.94f);
     private static readonly Vector4 GreenPanel = new(0.06f, 0.16f, 0.105f, 0.94f);
+    private static readonly Vector4 BluePanel = new(0.055f, 0.115f, 0.19f, 0.94f);
 
     private readonly Plugin plugin;
 
@@ -89,11 +91,19 @@ public sealed class MainWindow : Window, IDisposable
 
         DrawPlanOverview(plan);
         ImGui.Spacing();
-        DrawNextStep(plan);
+        DrawFeedViewToolbar(plan);
+        ImGui.Spacing();
+        if (plugin.Configuration.UseFeedListView)
+            DrawFeedStepList(plan);
+        else
+            DrawNextStep(plan);
         ImGui.Spacing();
         DrawTrackingOptions(plan);
-        ImGui.Spacing();
-        DrawStepTable(plan);
+        if (!plugin.Configuration.UseFeedListView)
+        {
+            ImGui.Spacing();
+            DrawStepTable(plan);
+        }
     }
 
     private void DrawColorSelection()
@@ -277,6 +287,52 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.PopID();
     }
 
+    private void DrawFeedViewToolbar(ActivePlanState plan)
+    {
+        if (!ImGui.BeginTable("##feedViewToolbar", 2, ImGuiTableFlags.SizingStretchProp))
+            return;
+
+        ImGui.TableSetupColumn("Progress", ImGuiTableColumnFlags.WidthStretch, 1f);
+        ImGui.TableSetupColumn("View", ImGuiTableColumnFlags.WidthFixed, 202 * ImGuiHelpers.GlobalScale);
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextColored(Gold, "NEXT FEED");
+        ImGui.SameLine();
+        ImGui.TextDisabled($"{plan.CompletedCount} of {plan.Steps.Count} steps complete");
+
+        ImGui.TableNextColumn();
+        var listView = plugin.Configuration.UseFeedListView;
+        if (DrawViewButton("Card view", !listView))
+        {
+            plugin.Configuration.UseFeedListView = false;
+            plugin.Configuration.Save();
+        }
+        ImGui.SameLine();
+        if (DrawViewButton("List view", listView))
+        {
+            plugin.Configuration.UseFeedListView = true;
+            plugin.Configuration.Save();
+        }
+
+        ImGui.EndTable();
+    }
+
+    private static bool DrawViewButton(string label, bool selected)
+    {
+        if (selected)
+        {
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.48f, 0.32f, 0.08f, 1f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.62f, 0.43f, 0.11f, 1f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.40f, 0.26f, 0.06f, 1f));
+        }
+
+        var clicked = ImGui.Button(label, new Vector2(96 * ImGuiHelpers.GlobalScale, 0));
+        if (selected)
+            ImGui.PopStyleColor(3);
+        return clicked;
+    }
+
     private void DrawNextStep(ActivePlanState plan)
     {
         var next = plan.NextStepIndex;
@@ -311,6 +367,142 @@ public sealed class MainWindow : Window, IDisposable
         }
         ImGui.EndChild();
         ImGui.PopStyleColor();
+    }
+
+    private void DrawFeedStepList(ActivePlanState plan)
+    {
+        var hide = plugin.Configuration.HideCompletedSteps;
+        if (ImGui.Checkbox("Hide completed", ref hide))
+        {
+            plugin.Configuration.HideCompletedSteps = hide;
+            plugin.Configuration.Save();
+        }
+        ImGui.SameLine();
+        ImGui.TextDisabled("Manual checks and automatic detection update this list immediately.");
+
+        var next = plan.NextStepIndex;
+        var fraction = plan.Steps.Count == 0 ? 1f : (float)plan.CompletedCount / plan.Steps.Count;
+        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, next < 0 ? Green : Gold);
+        ImGui.ProgressBar(fraction, new Vector2(-1, 7 * ImGuiHelpers.GlobalScale), string.Empty);
+        ImGui.PopStyleColor();
+        ImGui.Spacing();
+
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, Panel);
+        if (ImGui.BeginChild("##feedStepList", new Vector2(0, 350 * ImGuiHelpers.GlobalScale), true))
+        {
+            var rgb = new RgbColor(plan.StartR, plan.StartG, plan.StartB);
+            var visibleCount = 0;
+            for (var i = 0; i < plan.Steps.Count; i++)
+            {
+                var step = plan.Steps[i];
+                var fruit = (FruitKind)step.FruitKind;
+                rgb = ChocoboData.Fruit(fruit).Apply(rgb);
+                if (hide && step.IsComplete)
+                    continue;
+
+                DrawFeedListRow(step, fruit, i, next, rgb);
+                visibleCount++;
+                if (i < plan.Steps.Count - 1)
+                    ImGui.Spacing();
+            }
+
+            if (visibleCount == 0)
+            {
+                ImGui.Dummy(new Vector2(1, 18 * ImGuiHelpers.GlobalScale));
+                CenteredText("All feeding steps are complete.", Green);
+                CenteredText("Disable Hide completed to review the finished route.", Muted);
+            }
+        }
+        ImGui.EndChild();
+        ImGui.PopStyleColor();
+    }
+
+    private void DrawFeedListRow(
+        TrackedStepState step,
+        FruitKind fruit,
+        int index,
+        int next,
+        RgbColor predictedRgb)
+    {
+        var status = "QUEUED";
+        var statusColor = Muted;
+        var rowBackground = PanelRaised;
+        if (step.AutoCompleted && step.ManualCompleted)
+        {
+            status = "AUTO + MANUAL";
+            statusColor = Blue;
+            rowBackground = BluePanel;
+        }
+        else if (step.AutoCompleted)
+        {
+            status = "AUTO-DETECTED";
+            statusColor = Blue;
+            rowBackground = BluePanel;
+        }
+        else if (step.ManualCompleted)
+        {
+            status = "MANUAL";
+            statusColor = Green;
+            rowBackground = GreenPanel;
+        }
+        else if (index == next)
+        {
+            status = "NEXT";
+            statusColor = Gold;
+            rowBackground = GoldPanel;
+        }
+
+        ImGui.PushID(index);
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, rowBackground);
+        if (ImGui.BeginChild("##feedListRow", new Vector2(0, 54 * ImGuiHelpers.GlobalScale), true,
+                ImGuiWindowFlags.NoScrollbar))
+        {
+            if (ImGui.BeginTable("##feedListRowColumns", 6, ImGuiTableFlags.SizingStretchProp))
+            {
+                ImGui.TableSetupColumn("Step", ImGuiTableColumnFlags.WidthFixed, 52 * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("FruitIcon", ImGuiTableColumnFlags.WidthFixed, 38 * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("Fruit", ImGuiTableColumnFlags.WidthStretch, 1f);
+                ImGui.TableSetupColumn("Status", ImGuiTableColumnFlags.WidthFixed, 126 * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("Manual", ImGuiTableColumnFlags.WidthFixed, 82 * ImGuiHelpers.GlobalScale);
+                ImGui.TableSetupColumn("Auto", ImGuiTableColumnFlags.WidthFixed, 66 * ImGuiHelpers.GlobalScale);
+                ImGui.TableNextRow();
+
+                ImGui.TableNextColumn();
+                ImGui.AlignTextToFramePadding();
+                ImGui.TextColored(statusColor, $"#{index + 1}");
+
+                ImGui.TableNextColumn();
+                DrawFruitIcon(fruit, 30);
+
+                ImGui.TableNextColumn();
+                ImGui.AlignTextToFramePadding();
+                ImGui.TextUnformatted(plugin.LocalizedFruitName(fruit));
+                ImGui.TextDisabled($"Predicted RGB {predictedRgb.R}/{predictedRgb.G}/{predictedRgb.B}");
+
+                ImGui.TableNextColumn();
+                ImGui.AlignTextToFramePadding();
+                ImGui.TextColored(statusColor, status);
+
+                ImGui.TableNextColumn();
+                var manual = step.ManualCompleted;
+                var canEdit = index == next || manual || step.AutoCompleted;
+                ImGui.BeginDisabled(!canEdit);
+                if (ImGui.Checkbox("Manual##feedListManual", ref manual))
+                    plugin.SetManualStep(index, manual);
+                ImGui.EndDisabled();
+
+                ImGui.TableNextColumn();
+                var automatic = step.AutoCompleted;
+                ImGui.BeginDisabled();
+                ImGui.Checkbox("Auto##feedListAuto", ref automatic);
+                ImGui.EndDisabled();
+
+                ImGui.EndTable();
+            }
+        }
+        ImGui.EndChild();
+        ImGui.PopStyleColor();
+        ImGui.PopID();
     }
 
     private void DrawTrackingOptions(ActivePlanState plan)
@@ -547,7 +739,9 @@ public sealed class MainWindow : Window, IDisposable
             "3. TRACK EACH FEED",
             "The Manual checkbox is always yours to control. The Auto checkbox is filled when the game " +
             "reports that your chocobo ate the expected localized fruit. Automatic tracking never clicks " +
-            "the game UI, uses an item, hides chat, or reads process memory.",
+            "the game UI, uses an item, hides chat, or reads process memory. Switch between Card and List " +
+            "views at any time; in List view the next step is gold, manual completions are green, and " +
+            "auto-detected completions are blue.",
             PanelRaised);
 
         DrawHelpCard(
