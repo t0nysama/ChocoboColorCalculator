@@ -1,6 +1,6 @@
 [
   {
-    "Author": "tony",
+    "Author": "Null",
     "Name": "Chocobo Color Calculator",
     "InternalName": "ChocoboColorCalculator",
     "AssemblyVersion": "0.3.0.0",
@@ -15,6 +15,6 @@
     "IsTestingExclusive": false,
     "DownloadLinkInstall": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
     "DownloadLinkUpdate": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
-    "LastUpdate": "1785672260"
+    "LastUpdate": "1785672535"
   }
 ]
