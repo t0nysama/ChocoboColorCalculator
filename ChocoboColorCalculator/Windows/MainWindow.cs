@@ -28,6 +28,7 @@ public sealed class MainWindow : Window, IDisposable
         : base("Chocobo Color Calculator##Main")
     {
         this.plugin = plugin;
+        Flags = ImGuiWindowFlags.AlwaysVerticalScrollbar;
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = new Vector2(780, 720),
@@ -573,7 +574,7 @@ public sealed class MainWindow : Window, IDisposable
         if (!ImGui.BeginTable("##routeSteps", 7,
                 ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY |
                 ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX,
-                new Vector2(0, -1)))
+                new Vector2(0, 360 * ImGuiHelpers.GlobalScale)))
             return;
 
         ImGui.TableSetupScrollFreeze(0, 1);
