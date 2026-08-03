@@ -37,7 +37,7 @@ public sealed class MainWindow : Window, IDisposable
         : base("Chocobo Color Calculator##Main")
     {
         this.plugin = plugin;
-        Flags = ImGuiWindowFlags.AlwaysVerticalScrollbar;
+        Flags = ImGuiWindowFlags.None;
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = new Vector2(820, 720),
@@ -53,12 +53,12 @@ public sealed class MainWindow : Window, IDisposable
         entranceProgress = SmoothTowards(entranceProgress, 1f, 8f, deltaTime);
         routeReveal = SmoothTowards(routeReveal, 1f, 9f, deltaTime);
 
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(18, 16) * ImGuiHelpers.GlobalScale);
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10, 7) * ImGuiHelpers.GlobalScale);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(14, 12) * ImGuiHelpers.GlobalScale);
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(9, 5) * ImGuiHelpers.GlobalScale);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 8f * ImGuiHelpers.GlobalScale);
         ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 14f * ImGuiHelpers.GlobalScale);
         ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 10f * ImGuiHelpers.GlobalScale);
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(10, 9) * ImGuiHelpers.GlobalScale);
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8, 6) * ImGuiHelpers.GlobalScale);
         ImGui.PushStyleColor(ImGuiCol.Text, TextPrimary);
         ImGui.PushStyleColor(ImGuiCol.WindowBg, Canvas);
         ImGui.PushStyleColor(ImGuiCol.Border, new Vector4(0.35f, 0.45f, 0.68f, 0.24f));
@@ -97,7 +97,7 @@ public sealed class MainWindow : Window, IDisposable
     private void DrawAmbientBackground()
     {
         var drawList = ImGui.GetWindowDrawList();
-        var min = ImGui.GetCursorScreenPos() - new Vector2(18, 16) * ImGuiHelpers.GlobalScale;
+        var min = ImGui.GetCursorScreenPos() - new Vector2(14, 12) * ImGuiHelpers.GlobalScale;
         var max = ImGui.GetWindowPos() + ImGui.GetWindowSize() - new Vector2(2, 2) * ImGuiHelpers.GlobalScale;
         drawList.AddRectFilledMultiColor(
             min,
@@ -120,7 +120,7 @@ public sealed class MainWindow : Window, IDisposable
 
     private void DrawHeader(float deltaTime)
     {
-        var height = 92 * ImGuiHelpers.GlobalScale;
+        var height = 88 * ImGuiHelpers.GlobalScale;
         BeginGlassPanel("##heroHeader", new Vector2(0, height), GlassRaised, AccentViolet, AccentBlue);
         ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
         if (ImGui.BeginTable("##headerLayout", 2, ImGuiTableFlags.SizingStretchProp))
@@ -203,7 +203,7 @@ public sealed class MainWindow : Window, IDisposable
 
         ImGui.TableNextColumn();
         var pulse = 0.6f + 0.4f * MathF.Sin((float)ImGui.GetTime() * 2f);
-        ImGui.Dummy(new Vector2(1, 50) * ImGuiHelpers.GlobalScale);
+        ImGui.Dummy(new Vector2(1, 38) * ImGuiHelpers.GlobalScale);
         CenteredInColumn("→", new Vector4(AccentGold.X, AccentGold.Y, AccentGold.Z, pulse));
         CenteredInColumn("reliable", TextMuted);
 
@@ -222,19 +222,19 @@ public sealed class MainWindow : Window, IDisposable
     {
         var selected = ChocoboData.Colors[index];
         var changed = false;
-        BeginGlassPanel($"{comboId}Card", new Vector2(0, 138 * ImGuiHelpers.GlobalScale), Glass, accent, accent);
+        BeginGlassPanel($"{comboId}Card", new Vector2(0, 112 * ImGuiHelpers.GlobalScale), Glass, accent, accent);
         ImGui.TextColored(accent, heading);
-        ImGui.Dummy(new Vector2(1, 3) * ImGuiHelpers.GlobalScale);
-        DrawModernSwatch(selected.Rgb, 54);
+        ImGui.Dummy(new Vector2(1, 2) * ImGuiHelpers.GlobalScale);
+        DrawModernSwatch(selected.Rgb, 44);
         ImGui.SameLine();
         ImGui.BeginGroup();
         ImGui.TextColored(TextPrimary, selected.Name);
+        ImGui.SameLine();
         ImGui.TextColored(TextMuted, $"RGB  {selected.Rgb.R}  /  {selected.Rgb.G}  /  {selected.Rgb.B}");
-        ImGui.EndGroup();
-        ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
         ImGui.SetNextItemWidth(-1);
         if (DrawColorCombo(comboId, ref index))
             changed = true;
+        ImGui.EndGroup();
         EndGlassPanel();
         return changed;
     }
@@ -251,7 +251,7 @@ public sealed class MainWindow : Window, IDisposable
         var calculateWidth = ImGui.GetContentRegionAvail().X;
         if (GradientButton(
                 "CALCULATE RELIABLE ROUTE##calculate",
-                new Vector2(calculateWidth, 44 * ImGuiHelpers.GlobalScale),
+                new Vector2(calculateWidth, 40 * ImGuiHelpers.GlobalScale),
                 AccentViolet,
                 AccentBlue,
                 deltaTime))
@@ -261,7 +261,7 @@ public sealed class MainWindow : Window, IDisposable
 
         ImGui.TableNextColumn();
         var swapWidth = ImGui.GetContentRegionAvail().X;
-        if (GlassButton("SWAP COLORS##swap", new Vector2(swapWidth, 44 * ImGuiHelpers.GlobalScale), deltaTime))
+        if (GlassButton("SWAP COLORS##swap", new Vector2(swapWidth, 40 * ImGuiHelpers.GlobalScale), deltaTime))
         {
             (plugin.Configuration.CurrentColorIndex, plugin.Configuration.TargetColorIndex) =
                 (plugin.Configuration.TargetColorIndex, plugin.Configuration.CurrentColorIndex);
@@ -272,8 +272,8 @@ public sealed class MainWindow : Window, IDisposable
 
     private static void DrawEmptyState()
     {
-        BeginGlassPanel("##emptyState", new Vector2(0, 148 * ImGuiHelpers.GlobalScale), Glass, AccentBlue, AccentViolet);
-        ImGui.Dummy(new Vector2(1, 18) * ImGuiHelpers.GlobalScale);
+        BeginGlassPanel("##emptyState", new Vector2(0, 112 * ImGuiHelpers.GlobalScale), Glass, AccentBlue, AccentViolet);
+        ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
         CenteredText("READY WHEN YOU ARE", AccentBlue);
         CenteredText("Choose two colors and calculate a verified feeding route.", TextPrimary);
         CenteredText("Your next fruit, live progress, and complete ordered list will appear here.", TextMuted);
@@ -295,21 +295,14 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.EndTable();
         }
 
-        ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
-        BeginGlassPanel("##fruitTotals", new Vector2(0, 92 * ImGuiHelpers.GlobalScale), Glass, AccentGold, AccentCoral);
-        ImGui.TextColored(TextMuted, "FRUIT SHOPPING LIST");
-        if (ImGui.BeginTable("##fruitTotalColumns", 3, ImGuiTableFlags.SizingStretchSame))
+        ImGui.Dummy(new Vector2(1, 3) * ImGuiHelpers.GlobalScale);
+        BeginGlassPanel("##fruitTotals", new Vector2(0, 52 * ImGuiHelpers.GlobalScale), Glass, AccentGold, AccentCoral);
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextColored(TextMuted, "SHOPPING LIST");
+        foreach (var group in plan.Steps.GroupBy(step => (FruitKind)step.FruitKind))
         {
-            var column = 0;
-            foreach (var group in plan.Steps.GroupBy(step => (FruitKind)step.FruitKind))
-            {
-                if (column % 3 == 0)
-                    ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                DrawFruitTotalChip(group.Key, group.Count());
-                column++;
-            }
-            ImGui.EndTable();
+            ImGui.SameLine(0, 26 * ImGuiHelpers.GlobalScale);
+            DrawFruitTotalChip(group.Key, group.Count());
         }
         EndGlassPanel();
 
@@ -322,9 +315,10 @@ public sealed class MainWindow : Window, IDisposable
 
     private static void DrawMetricCard(string label, string value, string caption, Vector4 accent)
     {
-        BeginGlassPanel($"##metric{label}", new Vector2(0, 96 * ImGuiHelpers.GlobalScale), Glass, accent, accent);
+        BeginGlassPanel($"##metric{label}", new Vector2(0, 68 * ImGuiHelpers.GlobalScale), Glass, accent, accent);
         ImGui.TextColored(accent, label);
         ImGui.TextColored(TextPrimary, value);
+        ImGui.SameLine();
         ImGui.TextColored(TextMuted, caption);
         EndGlassPanel();
     }
@@ -332,12 +326,10 @@ public sealed class MainWindow : Window, IDisposable
     private void DrawFruitTotalChip(FruitKind fruit, int count)
     {
         ImGui.PushID($"total{fruit}");
-        DrawFruitIcon(fruit, 30);
+        DrawFruitIcon(fruit, 26);
         ImGui.SameLine();
-        ImGui.BeginGroup();
-        ImGui.TextColored(TextPrimary, plugin.LocalizedFruitName(fruit));
-        ImGui.TextColored(AccentGold, $"× {count}");
-        ImGui.EndGroup();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextColored(TextPrimary, $"{plugin.LocalizedFruitName(fruit)}  ×{count}");
         ImGui.PopID();
     }
 
@@ -350,7 +342,7 @@ public sealed class MainWindow : Window, IDisposable
         var accent = next < 0 ? Success : AccentGold;
         var panel = next < 0 ? GreenGlass : GoldGlass;
 
-        BeginGlassPanel("##nextStep", new Vector2(0, 154 * ImGuiHelpers.GlobalScale), panel, accent, AccentCoral);
+        BeginGlassPanel("##nextStep", new Vector2(0, 122 * ImGuiHelpers.GlobalScale), panel, accent, AccentCoral);
         if (next < 0)
         {
             ImGui.TextColored(Success, "ROUTE COMPLETE");
@@ -360,7 +352,7 @@ public sealed class MainWindow : Window, IDisposable
         else
         {
             var fruit = (FruitKind)plan.Steps[next].FruitKind;
-            DrawFruitIcon(fruit, 68);
+            DrawFruitIcon(fruit, 58);
             ImGui.SameLine();
             ImGui.BeginGroup();
             ImGui.TextColored(AccentGold, $"NEXT FEED  ·  STEP {next + 1} OF {plan.Steps.Count}");
@@ -369,14 +361,14 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.EndGroup();
         }
 
-        ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
+        ImGui.Dummy(new Vector2(1, 5) * ImGuiHelpers.GlobalScale);
         DrawAnimatedProgress(displayedProgress, accent, AccentBlue, $"{completed} / {plan.Steps.Count}");
         EndGlassPanel();
     }
 
     private void DrawTrackingOptions(ActivePlanState plan, float deltaTime)
     {
-        BeginGlassPanel("##trackingPanel", new Vector2(0, 112 * ImGuiHelpers.GlobalScale), Glass, AccentBlue, AccentViolet);
+        BeginGlassPanel("##trackingPanel", new Vector2(0, 90 * ImGuiHelpers.GlobalScale), Glass, AccentBlue, AccentViolet);
         ImGui.TextColored(TextMuted, "LIVE TRACKING");
         if (ImGui.BeginTable("##trackingControls", 2, ImGuiTableFlags.SizingStretchProp))
         {
@@ -405,19 +397,19 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.TableNextColumn();
             var next = plan.NextStepIndex;
             ImGui.BeginDisabled(next < 0);
-            if (CompactButton("CONFIRM NEXT##confirm", new Vector2(128, 32) * ImGuiHelpers.GlobalScale, Success, deltaTime))
+            if (CompactButton("CONFIRM NEXT##confirm", new Vector2(128, 29) * ImGuiHelpers.GlobalScale, Success, deltaTime))
                 plugin.MarkNextManually();
             ImGui.EndDisabled();
             ImGui.SameLine();
             ImGui.BeginDisabled(plan.CompletedCount == 0);
-            if (CompactButton("UNDO##undo", new Vector2(68, 32) * ImGuiHelpers.GlobalScale, AccentBlue, deltaTime))
+            if (CompactButton("UNDO##undo", new Vector2(68, 29) * ImGuiHelpers.GlobalScale, AccentBlue, deltaTime))
                 plugin.UndoLastStep();
             ImGui.EndDisabled();
             ImGui.SameLine();
-            if (CompactButton("RESET##reset", new Vector2(68, 32) * ImGuiHelpers.GlobalScale, AccentGold, deltaTime))
+            if (CompactButton("RESET##reset", new Vector2(68, 29) * ImGuiHelpers.GlobalScale, AccentGold, deltaTime))
                 plugin.ResetProgress();
             ImGui.SameLine();
-            if (CompactButton("CLEAR##clear", new Vector2(68, 32) * ImGuiHelpers.GlobalScale, Danger, deltaTime))
+            if (CompactButton("CLEAR##clear", new Vector2(68, 29) * ImGuiHelpers.GlobalScale, Danger, deltaTime))
                 plugin.ClearPlan();
             ImGui.EndTable();
         }
@@ -437,7 +429,7 @@ public sealed class MainWindow : Window, IDisposable
 
     private void DrawStepTable(ActivePlanState plan)
     {
-        BeginGlassPanel("##routeListPanel", new Vector2(0, 455 * ImGuiHelpers.GlobalScale), Glass, AccentViolet, AccentBlue);
+        BeginGlassPanel("##routeListPanel", new Vector2(0, 420 * ImGuiHelpers.GlobalScale), Glass, AccentViolet, AccentBlue);
         if (ImGui.BeginTable("##routeListHeader", 2, ImGuiTableFlags.SizingStretchProp))
         {
             ImGui.TableSetupColumn("Title", ImGuiTableColumnFlags.WidthStretch, 1f);
@@ -663,8 +655,10 @@ public sealed class MainWindow : Window, IDisposable
 
     private static void DrawNotice(string title, string body, Vector4 accent, Vector4 background)
     {
-        var lines = Math.Max(1, (int)MathF.Ceiling(ImGui.CalcTextSize(body).X / Math.Max(300, ImGui.GetContentRegionAvail().X - 40)));
-        var height = (54 + lines * 15) * ImGuiHelpers.GlobalScale;
+        var scale = ImGuiHelpers.GlobalScale;
+        var contentWidth = Math.Max(1, ImGui.GetContentRegionAvail().X - 24 * scale);
+        var bodyHeight = ImGui.CalcTextSize(body, false, contentWidth).Y;
+        var height = 22 * scale + ImGui.GetTextLineHeight() + bodyHeight;
         BeginGlassPanel($"##notice{title}", new Vector2(0, height), background, accent, accent);
         ImGui.TextColored(accent, title);
         ImGui.TextWrapped(body);
@@ -741,7 +735,7 @@ public sealed class MainWindow : Window, IDisposable
     private bool NavigationButton(string label, bool selected, float deltaTime)
     {
         var accent = selected ? AccentGold : AccentBlue;
-        return CompactButton(label, new Vector2(104, 38) * ImGuiHelpers.GlobalScale, accent, deltaTime, selected);
+        return CompactButton(label, new Vector2(104, 34) * ImGuiHelpers.GlobalScale, accent, deltaTime, selected);
     }
 
     private bool CompactButton(
@@ -826,14 +820,20 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.12f)),
             ImGuiHelpers.GlobalScale);
 
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(12, 8) * ImGuiHelpers.GlobalScale);
         ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0f, 0f, 0f, 0f));
-        ImGui.BeginChild(id, size, false, ImGuiWindowFlags.NoBackground);
+        ImGui.BeginChild(
+            id,
+            size,
+            false,
+            ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
     }
 
     private static void EndGlassPanel()
     {
         ImGui.EndChild();
         ImGui.PopStyleColor();
+        ImGui.PopStyleVar();
     }
 
     private static void CenteredText(string text, Vector4 color)
@@ -899,7 +899,7 @@ public sealed class MainWindow : Window, IDisposable
         Vector4 accent,
         Vector4 background)
     {
-        BeginGlassPanel($"##help{number}", new Vector2(0, 106 * ImGuiHelpers.GlobalScale), background, accent, accent);
+        BeginGlassPanel($"##help{number}", new Vector2(0, 92 * ImGuiHelpers.GlobalScale), background, accent, accent);
         if (ImGui.BeginTable($"##helpLayout{number}", 2, ImGuiTableFlags.SizingStretchProp))
         {
             ImGui.TableSetupColumn("Number", ImGuiTableColumnFlags.WidthFixed, 58 * ImGuiHelpers.GlobalScale);
