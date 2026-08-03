@@ -33,9 +33,9 @@ References disagree on Desert Yellow: the community page prose has used 216/180/
 ## Solver choices
 
 1. Apply each fruit immediately and clamp every channel to `[0,255]`; fruit order is therefore retained.
-2. Use lookahead 3 so the solver can take a temporary non-improving step when a three-fruit combination improves all channels together.
-3. In Reliable target mode, find both the reachable endpoint closest to the published target swatch and the endpoint with the largest classification margin. Use the closest endpoint when it retains at least 5 RGB-distance units of margin and the ordered solver reaches it exactly; otherwise use the deeper endpoint. This keeps the route close to observed recipes without reintroducing known neighboring-color failures.
-4. Simulate the final ordered route again and report both endpoint and nearest named color. The verifier checks all 7,225 named start/target pairs.
+2. For every lattice-reachable endpoint, construct an exact algebraic fruit route first and order its fruit to avoid clamping. Retain lookahead 3 only as a fallback when direct ordering cannot reach the endpoint exactly.
+3. Apply one Reliable target policy to every calculation: find both the reachable endpoint closest to the published target swatch and the endpoint with the largest classification margin. Use the closest endpoint when it retains at least 5 RGB-distance units of margin and the ordered solver reaches it exactly; otherwise use the deeper endpoint. There is no alternate calculation mode that can bypass this protection.
+4. Simulate the final ordered route again and report both endpoint and nearest named color. The verifier checks all 7,225 named start/target pairs for deterministic output, exact aim-point arrival, simulation consistency, positive classification margin, and the intended named color.
 
 The nearest-color rule is a well-supported community model, not an officially published Square Enix formula. The UI describes that honestly.
 

@@ -37,14 +37,23 @@ foreach (var start in ChocoboData.Colors)
 foreach (var target in ChocoboData.Colors)
 {
     pairCount++;
-    var result = calculator.Calculate(start, target, TargetMode.SafeCenter);
+    var result = calculator.Calculate(start, target);
+    var repeated = calculator.Calculate(start, target);
     var simulated = calculator.Simulate(start.Rgb, result.Steps);
     if (simulated != result.Endpoint)
         failures.Add($"{start.Name} -> {target.Name}: simulation differs from endpoint.");
+    if (result.Endpoint != result.AimPoint)
+        failures.Add($"{start.Name} -> {target.Name}: ordered route did not reach its selected aim point.");
     if (result.PredictedColor.Name != target.Name)
         failures.Add($"{start.Name} -> {target.Name}: predicts {result.PredictedColor.Name}.");
+    if (start.Name != target.Name && result.ClassificationMargin <= 0)
+        failures.Add($"{start.Name} -> {target.Name}: endpoint has no positive classification margin.");
     if (result.Steps.Count > 512)
         failures.Add($"{start.Name} -> {target.Name}: route exceeds 512 steps.");
+    if (result.AimPoint != repeated.AimPoint ||
+        result.Endpoint != repeated.Endpoint ||
+        !result.Steps.SequenceEqual(repeated.Steps))
+        failures.Add($"{start.Name} -> {target.Name}: repeated calculation is not deterministic.");
     if (start.Name == target.Name && result.Steps.Count != 0)
         failures.Add($"{start.Name} -> itself should require no fruit.");
     longest = Math.Max(longest, result.Steps.Count);

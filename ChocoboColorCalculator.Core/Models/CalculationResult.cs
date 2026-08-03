@@ -1,11 +1,5 @@
 namespace ChocoboColorCalculator.Core.Models;
 
-public enum TargetMode
-{
-    SafeCenter,
-    PublishedRgb,
-}
-
 public sealed record CalculationResult(
     ChocoboColor Start,
     ChocoboColor Target,

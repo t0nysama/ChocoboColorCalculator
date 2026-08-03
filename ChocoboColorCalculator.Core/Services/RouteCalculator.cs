@@ -19,16 +19,11 @@ public sealed class RouteCalculator
         paths = result;
     }
 
-    public CalculationResult Calculate(
-        ChocoboColor start,
-        ChocoboColor target,
-        TargetMode mode = TargetMode.SafeCenter)
+    public CalculationResult Calculate(ChocoboColor start, ChocoboColor target)
     {
         var aim = start.Name == target.Name
             ? start.Rgb
-            : mode == TargetMode.SafeCenter
-            ? FindSafeAimPoint(start.Rgb, target)
-            : target.Rgb;
+            : FindReliableAimPoint(start.Rgb, target);
 
         var steps = CalculateRoute(start.Rgb, aim, out var endpoint, out var usedFallback);
         var predicted = ChocoboData.NearestColor(endpoint);
@@ -75,7 +70,7 @@ public sealed class RouteCalculator
         return Math.Sqrt(competitorDistance) - Math.Sqrt(intendedDistance);
     }
 
-    private RgbColor FindSafeAimPoint(RgbColor start, ChocoboColor target)
+    private RgbColor FindReliableAimPoint(RgbColor start, ChocoboColor target)
     {
         var closest = target.Rgb;
         var closestTargetDistance = long.MaxValue;
@@ -149,6 +144,25 @@ public sealed class RouteCalculator
         out RgbColor endpoint,
         out bool usedFallback)
     {
+        if (start == aim)
+        {
+            endpoint = start;
+            usedFallback = false;
+            return [];
+        }
+
+        if (IsLatticeReachableWithoutClamping(start, aim))
+        {
+            var directRoute = BuildAlgebraicRoute(start, aim);
+            var directEndpoint = Simulate(start, directRoute);
+            if (directEndpoint == aim)
+            {
+                endpoint = directEndpoint;
+                usedFallback = false;
+                return directRoute;
+            }
+        }
+
         var steps = new List<FruitKind>();
         var current = start;
         var visited = new HashSet<(RgbColor Color, int Phase)>();

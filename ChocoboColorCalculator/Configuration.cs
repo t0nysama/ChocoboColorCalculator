@@ -8,11 +8,9 @@ public sealed class Configuration : IPluginConfiguration
     public int Version { get; set; } = 1;
     public int CurrentColorIndex { get; set; }
     public int TargetColorIndex { get; set; } = 6;
-    public bool UseSafeCenter { get; set; } = true;
     public bool AutoTrackingEnabled { get; set; } = true;
     public bool PrintNextStepToChat { get; set; } = true;
     public bool HideCompletedSteps { get; set; }
-    public bool UseFeedListView { get; set; }
     public ActivePlanState? ActivePlan { get; set; }
     public string? LastDetectionNotice { get; set; }
 

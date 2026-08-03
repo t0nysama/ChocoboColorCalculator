@@ -3,18 +3,18 @@
     "Author": "Null",
     "Name": "Chocobo Color Calculator",
     "InternalName": "ChocoboColorCalculator",
-    "AssemblyVersion": "0.3.5.0",
+    "AssemblyVersion": "0.4.0.0",
     "RepoUrl": "https://github.com/t0nysama/ChocoboColorCalculator",
     "IconUrl": "https://raw.githubusercontent.com/t0nysama/ChocoboColorCalculator/79e26fa213c3934ec5d9246cbffc6fdb14423809/images/icon.png",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 15,
     "Punchline": "Plan and track an accurate chocobo color feeding route in game.",
     "Description": "Calculates and tracks ordered fruit routes between companion chocobo colors.",
-    "Changelog": "Improved route accuracy with a reliable-target policy. Desert Yellow to Soot Black now uses the established 19-apple, 23-pear, 32-berry route, with narrow-color guidance and new regression coverage.",
+    "Changelog": "Locked every calculation to the reliable-target algorithm, added exact algebraic route ordering and stronger 7,225-pair verification, removed redundant calculation/list modes, and completely redesigned the UI with animated gradients, translucent glass panels, modern controls, and one streamlined route view.",
     "IsHide": false,
     "IsTestingExclusive": false,
     "DownloadLinkInstall": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
     "DownloadLinkUpdate": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
-    "LastUpdate": "1785708203"
+    "LastUpdate": "1785741594"
   }
 ]

@@ -6,11 +6,11 @@ A Dalamud API 15 plugin that calculates and tracks an ordered companion-chocobo 
 
 - All 85 named companion colors and their published RGB values.
 - The actual FFXIV item icons for every fruit, loaded from the local game data rather than bundled approximations.
-- A card-based interface with large color previews, a prominent next-feed panel, icon-backed fruit totals, route status colors, and a compact help walkthrough.
+- A single streamlined, glass-inspired interface with translucent layered panels, animated progress, gradient accents, hover transitions, ambient color effects, large previews, and one scrollable ordered route.
 - The six color fruits with verified game-data item row IDs and the accepted ±5 RGB effects.
-- Per-fruit 0–255 clamping and a three-fruit lookahead route solver.
-- A default **Reliable target** mode. It prefers the reachable point closest to the published swatch, then falls back to a deeper point when the closest route is too near a neighboring color or cannot reach its selected endpoint. This preserves known close-color fixes while matching the established 19-apple, 23-pear, 32-berry Desert Yellow to Soot Black recipe.
-- Exact ordered feed list, total fruit counts, simulated RGB after every step, and predicted resulting named color.
+- Per-fruit 0–255 clamping, exact algebraic ordering for reachable endpoints, and a three-fruit lookahead fallback.
+- One enforced **Reliable target** policy for every calculation. It prefers the reachable point closest to the published swatch, then falls back to a deeper point when the closest route is too near a neighboring color or cannot reach its selected endpoint. This preserves known close-color fixes while matching the established 19-apple, 23-pear, 32-berry Desert Yellow to Soot Black recipe.
+- Exact ordered feed list, total fruit counts, simulated RGB after every step, and predicted resulting named color. The verifier confirms deterministic output, exact endpoint arrival, simulation consistency, and a positive classification margin for all 7,225 named start/target pairs.
 - Independent manual and automatic checkboxes for every step.
 - Automatic progress from FFXIV's structured, client-localized chocobo-snack log message, with a rendered-chat fallback; unexpected fruit is detected and does not silently advance the route.
 - Persistent route and progress across plugin/game restarts, undo, reset, and optional next-step chat reminders.

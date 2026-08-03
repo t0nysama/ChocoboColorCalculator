@@ -44,7 +44,7 @@ public sealed class Plugin : IDalamudPlugin
         NormalizeConfiguration();
         LoadLocalizedFruitNames();
 
-        mainWindow = new MainWindow(this, calculator);
+        mainWindow = new MainWindow(this);
         windowSystem.AddWindow(mainWindow);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
@@ -74,8 +74,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         var start = ChocoboData.Colors[Configuration.CurrentColorIndex];
         var target = ChocoboData.Colors[Configuration.TargetColorIndex];
-        var mode = Configuration.UseSafeCenter ? TargetMode.SafeCenter : TargetMode.PublishedRgb;
-        var result = calculator.Calculate(start, target, mode);
+        var result = calculator.Calculate(start, target);
 
         Configuration.ActivePlan = new ActivePlanState
         {

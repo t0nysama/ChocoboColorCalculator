@@ -1,7 +1,6 @@
 using System.Numerics;
 using ChocoboColorCalculator.Core.Data;
 using ChocoboColorCalculator.Core.Models;
-using ChocoboColorCalculator.Core.Services;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility;
@@ -11,27 +10,37 @@ namespace ChocoboColorCalculator.Windows;
 
 public sealed class MainWindow : Window, IDisposable
 {
-    private static readonly Vector4 Gold = new(0.94f, 0.72f, 0.22f, 1f);
-    private static readonly Vector4 Green = new(0.35f, 0.86f, 0.52f, 1f);
-    private static readonly Vector4 Blue = new(0.30f, 0.70f, 1.00f, 1f);
-    private static readonly Vector4 Red = new(0.95f, 0.42f, 0.39f, 1f);
-    private static readonly Vector4 Muted = new(0.62f, 0.65f, 0.70f, 1f);
-    private static readonly Vector4 Panel = new(0.075f, 0.085f, 0.105f, 0.94f);
-    private static readonly Vector4 PanelRaised = new(0.105f, 0.12f, 0.145f, 0.96f);
-    private static readonly Vector4 GoldPanel = new(0.18f, 0.145f, 0.065f, 0.94f);
-    private static readonly Vector4 GreenPanel = new(0.06f, 0.16f, 0.105f, 0.94f);
-    private static readonly Vector4 BluePanel = new(0.055f, 0.115f, 0.19f, 0.94f);
+    private static readonly Vector4 AccentGold = new(1.00f, 0.72f, 0.24f, 1f);
+    private static readonly Vector4 AccentCoral = new(1.00f, 0.39f, 0.42f, 1f);
+    private static readonly Vector4 AccentBlue = new(0.31f, 0.68f, 1.00f, 1f);
+    private static readonly Vector4 AccentViolet = new(0.62f, 0.42f, 1.00f, 1f);
+    private static readonly Vector4 Success = new(0.31f, 0.90f, 0.62f, 1f);
+    private static readonly Vector4 Danger = new(1.00f, 0.42f, 0.42f, 1f);
+    private static readonly Vector4 TextPrimary = new(0.93f, 0.95f, 1.00f, 1f);
+    private static readonly Vector4 TextMuted = new(0.57f, 0.62f, 0.72f, 1f);
+    private static readonly Vector4 Canvas = new(0.025f, 0.032f, 0.055f, 0.98f);
+    private static readonly Vector4 Glass = new(0.075f, 0.092f, 0.135f, 0.82f);
+    private static readonly Vector4 GlassRaised = new(0.105f, 0.125f, 0.18f, 0.88f);
+    private static readonly Vector4 GoldGlass = new(0.18f, 0.125f, 0.055f, 0.88f);
+    private static readonly Vector4 BlueGlass = new(0.055f, 0.115f, 0.205f, 0.88f);
+    private static readonly Vector4 GreenGlass = new(0.045f, 0.16f, 0.115f, 0.88f);
 
     private readonly Plugin plugin;
+    private readonly Dictionary<string, float> hoverAnimations = [];
+    private float entranceProgress;
+    private float displayedProgress;
+    private float routeReveal = 1f;
+    private DateTime observedPlanCreatedAt;
+    private bool showGuide;
 
-    public MainWindow(Plugin plugin, RouteCalculator calculator)
+    public MainWindow(Plugin plugin)
         : base("Chocobo Color Calculator##Main")
     {
         this.plugin = plugin;
         Flags = ImGuiWindowFlags.AlwaysVerticalScrollbar;
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(780, 720),
+            MinimumSize = new Vector2(820, 720),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
         };
     }
@@ -40,71 +49,138 @@ public sealed class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(14, 12) * ImGuiHelpers.GlobalScale);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 6f * ImGuiHelpers.GlobalScale);
-        ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 8f * ImGuiHelpers.GlobalScale);
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(9, 7) * ImGuiHelpers.GlobalScale);
+        var deltaTime = Math.Clamp(ImGui.GetIO().DeltaTime, 0f, 0.1f);
+        entranceProgress = SmoothTowards(entranceProgress, 1f, 8f, deltaTime);
+        routeReveal = SmoothTowards(routeReveal, 1f, 9f, deltaTime);
 
-        DrawHeader();
-        ImGui.Spacing();
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(18, 16) * ImGuiHelpers.GlobalScale);
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10, 7) * ImGuiHelpers.GlobalScale);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 8f * ImGuiHelpers.GlobalScale);
+        ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 14f * ImGuiHelpers.GlobalScale);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 10f * ImGuiHelpers.GlobalScale);
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(10, 9) * ImGuiHelpers.GlobalScale);
+        ImGui.PushStyleColor(ImGuiCol.Text, TextPrimary);
+        ImGui.PushStyleColor(ImGuiCol.WindowBg, Canvas);
+        ImGui.PushStyleColor(ImGuiCol.Border, new Vector4(0.35f, 0.45f, 0.68f, 0.24f));
+        ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0.08f, 0.10f, 0.15f, 0.92f));
+        ImGui.PushStyleColor(ImGuiCol.FrameBgHovered, new Vector4(0.12f, 0.15f, 0.22f, 0.96f));
+        ImGui.PushStyleColor(ImGuiCol.FrameBgActive, new Vector4(0.15f, 0.18f, 0.27f, 1f));
+        ImGui.PushStyleColor(ImGuiCol.CheckMark, AccentBlue);
+        ImGui.PushStyleColor(ImGuiCol.ScrollbarBg, new Vector4(0.02f, 0.03f, 0.05f, 0.55f));
+        ImGui.PushStyleColor(ImGuiCol.ScrollbarGrab, new Vector4(0.25f, 0.34f, 0.52f, 0.68f));
+        ImGui.PushStyleColor(ImGuiCol.ScrollbarGrabHovered, new Vector4(0.35f, 0.48f, 0.72f, 0.82f));
 
-        if (ImGui.BeginTabBar("##mainTabs", ImGuiTabBarFlags.None))
+        DrawAmbientBackground();
+        DrawHeader(deltaTime);
+        ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
+
+        var slide = (1f - EaseOutCubic(entranceProgress)) * 14f * ImGuiHelpers.GlobalScale;
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + slide);
+        if (showGuide)
+            DrawHelp();
+        else
+            DrawCalculator(deltaTime);
+
+        ImGui.PopStyleColor(10);
+        ImGui.PopStyleVar(6);
+    }
+
+    private static float SmoothTowards(float current, float target, float speed, float deltaTime) =>
+        current + (target - current) * (1f - MathF.Exp(-speed * deltaTime));
+
+    private static float EaseOutCubic(float value)
+    {
+        var inverse = 1f - Math.Clamp(value, 0f, 1f);
+        return 1f - inverse * inverse * inverse;
+    }
+
+    private void DrawAmbientBackground()
+    {
+        var drawList = ImGui.GetWindowDrawList();
+        var min = ImGui.GetCursorScreenPos() - new Vector2(18, 16) * ImGuiHelpers.GlobalScale;
+        var max = ImGui.GetWindowPos() + ImGui.GetWindowSize() - new Vector2(2, 2) * ImGuiHelpers.GlobalScale;
+        drawList.AddRectFilledMultiColor(
+            min,
+            max,
+            ImGui.GetColorU32(new Vector4(0.035f, 0.045f, 0.08f, 0.98f)),
+            ImGui.GetColorU32(new Vector4(0.055f, 0.035f, 0.095f, 0.98f)),
+            ImGui.GetColorU32(new Vector4(0.018f, 0.028f, 0.052f, 0.99f)),
+            ImGui.GetColorU32(new Vector4(0.018f, 0.038f, 0.065f, 0.99f)));
+
+        var pulse = 0.5f + 0.5f * MathF.Sin((float)ImGui.GetTime() * 0.65f);
+        drawList.AddCircleFilled(
+            min + new Vector2(ImGui.GetWindowSize().X * 0.82f, 150 * ImGuiHelpers.GlobalScale),
+            (100 + pulse * 14) * ImGuiHelpers.GlobalScale,
+            ImGui.GetColorU32(new Vector4(0.34f, 0.24f, 0.82f, 0.045f)));
+        drawList.AddCircleFilled(
+            min + new Vector2(75 * ImGuiHelpers.GlobalScale, ImGui.GetWindowSize().Y * 0.68f),
+            105 * ImGuiHelpers.GlobalScale,
+            ImGui.GetColorU32(new Vector4(0.08f, 0.48f, 0.78f, 0.035f)));
+    }
+
+    private void DrawHeader(float deltaTime)
+    {
+        var height = 92 * ImGuiHelpers.GlobalScale;
+        BeginGlassPanel("##heroHeader", new Vector2(0, height), GlassRaised, AccentViolet, AccentBlue);
+        ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
+        if (ImGui.BeginTable("##headerLayout", 2, ImGuiTableFlags.SizingStretchProp))
         {
-            if (ImGui.BeginTabItem("Calculator & route"))
-            {
-                DrawCalculator();
-                ImGui.EndTabItem();
-            }
-            if (ImGui.BeginTabItem("How it works"))
-            {
-                DrawHelp();
-                ImGui.EndTabItem();
-            }
-            ImGui.EndTabBar();
+            ImGui.TableSetupColumn("Brand", ImGuiTableColumnFlags.WidthStretch, 1f);
+            ImGui.TableSetupColumn("Navigation", ImGuiTableColumnFlags.WidthFixed, 224 * ImGuiHelpers.GlobalScale);
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.TextColored(AccentGold, "CHOCOBO COLOR");
+            ImGui.SameLine();
+            ImGui.TextColored(TextPrimary, "CALCULATOR");
+            ImGui.TextColored(TextMuted, "Reliable routes, live feeding progress, zero browser tabs.");
+            ImGui.Spacing();
+            ImGui.TextColored(Success, "●  RELIABLE ENGINE");
+            ImGui.SameLine();
+            ImGui.TextColored(TextMuted, "7,225 color routes verified");
+
+            ImGui.TableNextColumn();
+            ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
+            if (NavigationButton("ROUTE##navRoute", !showGuide, deltaTime))
+                showGuide = false;
+            ImGui.SameLine();
+            if (NavigationButton("GUIDE##navGuide", showGuide, deltaTime))
+                showGuide = true;
+            ImGui.EndTable();
         }
-
-        ImGui.PopStyleVar(4);
+        EndGlassPanel();
     }
 
-    private static void DrawHeader()
+    private void DrawCalculator(float deltaTime)
     {
-        ImGui.TextColored(Gold, "CHOCOBO COLOR CALCULATOR");
-        ImGui.SameLine();
-        ImGui.TextDisabled("  Plan, feed, and track without leaving the game");
-        ImGui.Separator();
-    }
-
-    private void DrawCalculator()
-    {
+        DrawSectionHeading("CREATE A ROUTE", "The reliable calculation model is applied automatically to every color pair.");
         DrawColorSelection();
-        ImGui.Spacing();
-        DrawCalculationMode();
-        ImGui.Spacing();
-        DrawCalculateActions();
-        ImGui.Spacing();
+        ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
+        DrawCalculateActions(deltaTime);
 
         var plan = plugin.Configuration.ActivePlan;
         if (plan is null)
         {
+            ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
             DrawEmptyState();
             return;
         }
 
-        DrawPlanOverview(plan);
-        ImGui.Spacing();
-        DrawFeedViewToolbar(plan);
-        ImGui.Spacing();
-        if (plugin.Configuration.UseFeedListView)
-            DrawFeedStepList(plan);
-        else
-            DrawNextStep(plan);
-        ImGui.Spacing();
-        DrawTrackingOptions(plan);
-        if (!plugin.Configuration.UseFeedListView)
+        if (observedPlanCreatedAt != plan.CreatedAtUtc)
         {
-            ImGui.Spacing();
-            DrawStepTable(plan);
+            observedPlanCreatedAt = plan.CreatedAtUtc;
+            routeReveal = 0f;
+            displayedProgress = plan.Steps.Count == 0 ? 1f : (float)plan.CompletedCount / plan.Steps.Count;
         }
+
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (1f - EaseOutCubic(routeReveal)) * 10 * ImGuiHelpers.GlobalScale);
+        ImGui.Dummy(new Vector2(1, 10) * ImGuiHelpers.GlobalScale);
+        DrawPlanOverview(plan);
+        ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
+        DrawNextStep(plan, deltaTime);
+        ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
+        DrawTrackingOptions(plan, deltaTime);
+        ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
+        DrawStepTable(plan);
     }
 
     private void DrawColorSelection()
@@ -113,27 +189,27 @@ public sealed class MainWindow : Window, IDisposable
             return;
 
         ImGui.TableSetupColumn("Current", ImGuiTableColumnFlags.WidthStretch, 1f);
-        ImGui.TableSetupColumn("Arrow", ImGuiTableColumnFlags.WidthFixed, 52 * ImGuiHelpers.GlobalScale);
+        ImGui.TableSetupColumn("Arrow", ImGuiTableColumnFlags.WidthFixed, 64 * ImGuiHelpers.GlobalScale);
         ImGui.TableSetupColumn("Target", ImGuiTableColumnFlags.WidthStretch, 1f);
         ImGui.TableNextRow();
 
         ImGui.TableNextColumn();
         var currentIndex = plugin.Configuration.CurrentColorIndex;
-        if (DrawColorSelectorCard("Current plumage", "##currentColor", ref currentIndex))
+        if (DrawColorSelectorCard("CURRENT PLUMAGE", "##currentColor", ref currentIndex, AccentBlue))
         {
             plugin.Configuration.CurrentColorIndex = currentIndex;
             plugin.Configuration.Save();
         }
 
         ImGui.TableNextColumn();
-        var arrowOffset = 39f * ImGuiHelpers.GlobalScale;
-        ImGui.Dummy(new Vector2(1, arrowOffset));
-        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 12 * ImGuiHelpers.GlobalScale);
-        ImGui.TextColored(Gold, ">>");
+        var pulse = 0.6f + 0.4f * MathF.Sin((float)ImGui.GetTime() * 2f);
+        ImGui.Dummy(new Vector2(1, 50) * ImGuiHelpers.GlobalScale);
+        CenteredInColumn("→", new Vector4(AccentGold.X, AccentGold.Y, AccentGold.Z, pulse));
+        CenteredInColumn("reliable", TextMuted);
 
         ImGui.TableNextColumn();
         var targetIndex = plugin.Configuration.TargetColorIndex;
-        if (DrawColorSelectorCard("Desired plumage", "##targetColor", ref targetIndex))
+        if (DrawColorSelectorCard("DESIRED PLUMAGE", "##targetColor", ref targetIndex, AccentViolet))
         {
             plugin.Configuration.TargetColorIndex = targetIndex;
             plugin.Configuration.Save();
@@ -142,376 +218,170 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.EndTable();
     }
 
-    private bool DrawColorSelectorCard(string heading, string comboId, ref int index)
+    private bool DrawColorSelectorCard(string heading, string comboId, ref int index, Vector4 accent)
     {
         var selected = ChocoboData.Colors[index];
         var changed = false;
-
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, PanelRaised);
-        if (ImGui.BeginChild($"{comboId}Card", new Vector2(0, 108 * ImGuiHelpers.GlobalScale), true,
-                ImGuiWindowFlags.NoScrollbar))
-        {
-            ImGui.TextDisabled(heading.ToUpperInvariant());
-            DrawLargeSwatch(selected.Rgb, $"{comboId}Large");
-            ImGui.SameLine();
-            ImGui.BeginGroup();
-            ImGui.TextUnformatted(selected.Name);
-            ImGui.TextDisabled($"RGB {selected.Rgb.R} / {selected.Rgb.G} / {selected.Rgb.B}");
-            ImGui.EndGroup();
-
-            ImGui.SetNextItemWidth(-1);
-            if (DrawColorCombo(comboId, ref index))
-                changed = true;
-        }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
+        BeginGlassPanel($"{comboId}Card", new Vector2(0, 138 * ImGuiHelpers.GlobalScale), Glass, accent, accent);
+        ImGui.TextColored(accent, heading);
+        ImGui.Dummy(new Vector2(1, 3) * ImGuiHelpers.GlobalScale);
+        DrawModernSwatch(selected.Rgb, 54);
+        ImGui.SameLine();
+        ImGui.BeginGroup();
+        ImGui.TextColored(TextPrimary, selected.Name);
+        ImGui.TextColored(TextMuted, $"RGB  {selected.Rgb.R}  /  {selected.Rgb.G}  /  {selected.Rgb.B}");
+        ImGui.EndGroup();
+        ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
+        ImGui.SetNextItemWidth(-1);
+        if (DrawColorCombo(comboId, ref index))
+            changed = true;
+        EndGlassPanel();
         return changed;
     }
 
-    private void DrawCalculationMode()
+    private void DrawCalculateActions(float deltaTime)
     {
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, Panel);
-        if (ImGui.BeginChild("##modePanel", new Vector2(0, 74 * ImGuiHelpers.GlobalScale), true,
-                ImGuiWindowFlags.NoScrollbar))
+        if (!ImGui.BeginTable("##calculateActions", 2, ImGuiTableFlags.SizingStretchProp))
+            return;
+
+        ImGui.TableSetupColumn("Calculate", ImGuiTableColumnFlags.WidthStretch, 3f);
+        ImGui.TableSetupColumn("Swap", ImGuiTableColumnFlags.WidthStretch, 1f);
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        var calculateWidth = ImGui.GetContentRegionAvail().X;
+        if (GradientButton(
+                "CALCULATE RELIABLE ROUTE##calculate",
+                new Vector2(calculateWidth, 44 * ImGuiHelpers.GlobalScale),
+                AccentViolet,
+                AccentBlue,
+                deltaTime))
         {
-            ImGui.TextColored(Gold, "ACCURACY MODE");
-            var safe = plugin.Configuration.UseSafeCenter;
-            if (ImGui.BeginTable("##modeChoices", 2, ImGuiTableFlags.SizingStretchProp))
-            {
-                ImGui.TableSetupColumn("Reliable", ImGuiTableColumnFlags.WidthStretch, 2f);
-                ImGui.TableSetupColumn("Exact", ImGuiTableColumnFlags.WidthStretch, 1f);
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                if (ImGui.RadioButton("Reliable target", safe))
-                {
-                    plugin.Configuration.UseSafeCenter = true;
-                    plugin.Configuration.Save();
-                }
-                ImGui.SameLine();
-                ImGui.TextDisabled("Recommended - closest reachable point in the target region");
-
-                ImGui.TableNextColumn();
-                if (ImGui.RadioButton("Published RGB", !safe))
-                {
-                    plugin.Configuration.UseSafeCenter = false;
-                    plugin.Configuration.Save();
-                }
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("Aims directly at the published swatch without first requiring a reachable point inside its color region.");
-                ImGui.EndTable();
-            }
-        }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
-    }
-
-    private void DrawCalculateActions()
-    {
-        ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.70f, 0.48f, 0.10f, 1f));
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.86f, 0.62f, 0.16f, 1f));
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.57f, 0.37f, 0.07f, 1f));
-        if (ImGui.Button("CALCULATE ROUTE", new Vector2(-145 * ImGuiHelpers.GlobalScale, 36 * ImGuiHelpers.GlobalScale)))
             plugin.CreatePlan();
-        ImGui.PopStyleColor(3);
+        }
 
-        ImGui.SameLine();
-        if (ImGui.Button("Swap colors", new Vector2(-1, 36 * ImGuiHelpers.GlobalScale)))
+        ImGui.TableNextColumn();
+        var swapWidth = ImGui.GetContentRegionAvail().X;
+        if (GlassButton("SWAP COLORS##swap", new Vector2(swapWidth, 44 * ImGuiHelpers.GlobalScale), deltaTime))
         {
             (plugin.Configuration.CurrentColorIndex, plugin.Configuration.TargetColorIndex) =
                 (plugin.Configuration.TargetColorIndex, plugin.Configuration.CurrentColorIndex);
             plugin.Configuration.Save();
         }
+        ImGui.EndTable();
     }
 
     private static void DrawEmptyState()
     {
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, Panel);
-        if (ImGui.BeginChild("##emptyState", new Vector2(0, 115 * ImGuiHelpers.GlobalScale), true,
-                ImGuiWindowFlags.NoScrollbar))
-        {
-            ImGui.Dummy(new Vector2(1, 13 * ImGuiHelpers.GlobalScale));
-            CenteredText("Choose your current and desired colors, then calculate a feeding route.", Muted);
-            CenteredText("Your ordered fruit list and live progress tracker will appear here.", Muted);
-        }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
+        BeginGlassPanel("##emptyState", new Vector2(0, 148 * ImGuiHelpers.GlobalScale), Glass, AccentBlue, AccentViolet);
+        ImGui.Dummy(new Vector2(1, 18) * ImGuiHelpers.GlobalScale);
+        CenteredText("READY WHEN YOU ARE", AccentBlue);
+        CenteredText("Choose two colors and calculate a verified feeding route.", TextPrimary);
+        CenteredText("Your next fruit, live progress, and complete ordered list will appear here.", TextMuted);
+        EndGlassPanel();
     }
 
     private void DrawPlanOverview(ActivePlanState plan)
     {
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, PanelRaised);
-        if (ImGui.BeginChild("##routeOverview", new Vector2(0, 186 * ImGuiHelpers.GlobalScale), true,
-                ImGuiWindowFlags.NoScrollbar))
+        DrawSectionHeading("ROUTE OVERVIEW", $"{plan.StartName}  →  {plan.TargetName}");
+        if (ImGui.BeginTable("##overviewCards", 3, ImGuiTableFlags.SizingStretchSame))
         {
-            ImGui.TextColored(Gold, "YOUR FEEDING PLAN");
-            ImGui.SameLine();
-            ImGui.TextDisabled($"{plan.StartName}  >  {plan.TargetName}");
-
-            ImGui.TextDisabled(
-                $"Aim {plan.AimR}/{plan.AimG}/{plan.AimB}   |   " +
-                $"Simulated result {plan.EndR}/{plan.EndG}/{plan.EndB}   |   " +
-                $"Safety margin {plan.ClassificationMargin:F1}");
-
-            ImGui.Spacing();
-            if (ImGui.BeginTable("##fruitTotals", 3, ImGuiTableFlags.SizingStretchSame))
-            {
-                var column = 0;
-                foreach (var group in plan.Steps.GroupBy(step => (FruitKind)step.FruitKind))
-                {
-                    if (column % 3 == 0)
-                        ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    DrawFruitTotalChip(group.Key, group.Count());
-                    column++;
-                }
-                ImGui.EndTable();
-            }
-
-            if (!string.IsNullOrWhiteSpace(plan.Warning))
-            {
-                ImGui.PushStyleColor(ImGuiCol.Text, Gold);
-                ImGui.TextWrapped($"Note: {plan.Warning}");
-                ImGui.PopStyleColor();
-            }
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            DrawMetricCard("TOTAL FEEDS", plan.Steps.Count.ToString(), "ordered fruit steps", AccentGold);
+            ImGui.TableNextColumn();
+            DrawMetricCard("PREDICTED COLOR", plan.PredictedColorName, $"RGB {plan.EndR}/{plan.EndG}/{plan.EndB}", AccentBlue);
+            ImGui.TableNextColumn();
+            DrawMetricCard("RELIABILITY MARGIN", plan.ClassificationMargin.ToString("F1"), "distance from nearest rival", Success);
+            ImGui.EndTable();
         }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
+
+        ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
+        BeginGlassPanel("##fruitTotals", new Vector2(0, 92 * ImGuiHelpers.GlobalScale), Glass, AccentGold, AccentCoral);
+        ImGui.TextColored(TextMuted, "FRUIT SHOPPING LIST");
+        if (ImGui.BeginTable("##fruitTotalColumns", 3, ImGuiTableFlags.SizingStretchSame))
+        {
+            var column = 0;
+            foreach (var group in plan.Steps.GroupBy(step => (FruitKind)step.FruitKind))
+            {
+                if (column % 3 == 0)
+                    ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                DrawFruitTotalChip(group.Key, group.Count());
+                column++;
+            }
+            ImGui.EndTable();
+        }
+        EndGlassPanel();
+
+        if (!string.IsNullOrWhiteSpace(plan.Warning))
+        {
+            ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
+            DrawNotice("ACCURACY NOTE", plan.Warning, AccentGold, GoldGlass);
+        }
+    }
+
+    private static void DrawMetricCard(string label, string value, string caption, Vector4 accent)
+    {
+        BeginGlassPanel($"##metric{label}", new Vector2(0, 96 * ImGuiHelpers.GlobalScale), Glass, accent, accent);
+        ImGui.TextColored(accent, label);
+        ImGui.TextColored(TextPrimary, value);
+        ImGui.TextColored(TextMuted, caption);
+        EndGlassPanel();
     }
 
     private void DrawFruitTotalChip(FruitKind fruit, int count)
     {
         ImGui.PushID($"total{fruit}");
-        DrawFruitIcon(fruit, 28);
+        DrawFruitIcon(fruit, 30);
         ImGui.SameLine();
-        ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted($"{plugin.LocalizedFruitName(fruit)}  x{count}");
+        ImGui.BeginGroup();
+        ImGui.TextColored(TextPrimary, plugin.LocalizedFruitName(fruit));
+        ImGui.TextColored(AccentGold, $"× {count}");
+        ImGui.EndGroup();
         ImGui.PopID();
     }
 
-    private void DrawFeedViewToolbar(ActivePlanState plan)
-    {
-        if (!ImGui.BeginTable("##feedViewToolbar", 2, ImGuiTableFlags.SizingStretchProp))
-            return;
-
-        ImGui.TableSetupColumn("Progress", ImGuiTableColumnFlags.WidthStretch, 1f);
-        ImGui.TableSetupColumn("View", ImGuiTableColumnFlags.WidthFixed, 202 * ImGuiHelpers.GlobalScale);
-        ImGui.TableNextRow();
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.TextColored(Gold, "NEXT FEED");
-        ImGui.SameLine();
-        ImGui.TextDisabled($"{plan.CompletedCount} of {plan.Steps.Count} steps complete");
-
-        ImGui.TableNextColumn();
-        var listView = plugin.Configuration.UseFeedListView;
-        if (DrawViewButton("Card view", !listView))
-        {
-            plugin.Configuration.UseFeedListView = false;
-            plugin.Configuration.Save();
-        }
-        ImGui.SameLine();
-        if (DrawViewButton("List view", listView))
-        {
-            plugin.Configuration.UseFeedListView = true;
-            plugin.Configuration.Save();
-        }
-
-        ImGui.EndTable();
-    }
-
-    private static bool DrawViewButton(string label, bool selected)
-    {
-        if (selected)
-        {
-            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.48f, 0.32f, 0.08f, 1f));
-            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.62f, 0.43f, 0.11f, 1f));
-            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.40f, 0.26f, 0.06f, 1f));
-        }
-
-        var clicked = ImGui.Button(label, new Vector2(96 * ImGuiHelpers.GlobalScale, 0));
-        if (selected)
-            ImGui.PopStyleColor(3);
-        return clicked;
-    }
-
-    private void DrawNextStep(ActivePlanState plan)
-    {
-        var next = plan.NextStepIndex;
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, next < 0 ? GreenPanel : GoldPanel);
-        if (ImGui.BeginChild("##nextStep", new Vector2(0, 112 * ImGuiHelpers.GlobalScale), true,
-                ImGuiWindowFlags.NoScrollbar))
-        {
-            if (next < 0)
-            {
-                ImGui.TextColored(Green, "FEEDING ROUTE COMPLETE");
-                ImGui.TextWrapped("Leave your chocobo in the stable until the six-hour timer finishes.");
-                ImGui.Spacing();
-                ImGui.TextDisabled("Removing the chocobo early cancels the pending color change.");
-            }
-            else
-            {
-                var fruit = (FruitKind)plan.Steps[next].FruitKind;
-                DrawFruitIcon(fruit, 58);
-                ImGui.SameLine();
-                ImGui.BeginGroup();
-                ImGui.TextColored(Gold, $"NEXT FEED  -  STEP {next + 1} OF {plan.Steps.Count}");
-                ImGui.TextUnformatted(plugin.LocalizedFruitName(fruit));
-                ImGui.TextDisabled("Feed exactly one, then confirm manually or let auto-detection advance.");
-                ImGui.EndGroup();
-            }
-
-            var completed = plan.CompletedCount;
-            var fraction = plan.Steps.Count == 0 ? 1f : (float)completed / plan.Steps.Count;
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, next < 0 ? Green : Gold);
-            ImGui.ProgressBar(fraction, new Vector2(-1, 8 * ImGuiHelpers.GlobalScale), string.Empty);
-            ImGui.PopStyleColor();
-        }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
-    }
-
-    private void DrawFeedStepList(ActivePlanState plan)
-    {
-        var hide = plugin.Configuration.HideCompletedSteps;
-        if (ImGui.Checkbox("Hide completed", ref hide))
-        {
-            plugin.Configuration.HideCompletedSteps = hide;
-            plugin.Configuration.Save();
-        }
-        ImGui.SameLine();
-        ImGui.TextDisabled("Manual checks and automatic detection update this list immediately.");
-
-        var next = plan.NextStepIndex;
-        var fraction = plan.Steps.Count == 0 ? 1f : (float)plan.CompletedCount / plan.Steps.Count;
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, next < 0 ? Green : Gold);
-        ImGui.ProgressBar(fraction, new Vector2(-1, 7 * ImGuiHelpers.GlobalScale), string.Empty);
-        ImGui.PopStyleColor();
-        ImGui.Spacing();
-
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, Panel);
-        if (ImGui.BeginChild("##feedStepList", new Vector2(0, 350 * ImGuiHelpers.GlobalScale), true,
-                ImGuiWindowFlags.AlwaysVerticalScrollbar))
-        {
-            var rgb = new RgbColor(plan.StartR, plan.StartG, plan.StartB);
-            var visibleCount = 0;
-            for (var i = 0; i < plan.Steps.Count; i++)
-            {
-                var step = plan.Steps[i];
-                var fruit = (FruitKind)step.FruitKind;
-                rgb = ChocoboData.Fruit(fruit).Apply(rgb);
-                if (hide && step.IsComplete)
-                    continue;
-
-                DrawFeedListRow(step, fruit, i, next, rgb);
-                visibleCount++;
-                if (i < plan.Steps.Count - 1)
-                    ImGui.Spacing();
-            }
-
-            if (visibleCount == 0)
-            {
-                ImGui.Dummy(new Vector2(1, 18 * ImGuiHelpers.GlobalScale));
-                CenteredText("All feeding steps are complete.", Green);
-                CenteredText("Disable Hide completed to review the finished route.", Muted);
-            }
-        }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
-    }
-
-    private void DrawFeedListRow(
-        TrackedStepState step,
-        FruitKind fruit,
-        int index,
-        int next,
-        RgbColor predictedRgb)
-    {
-        var status = "QUEUED";
-        var statusColor = Muted;
-        var rowBackground = PanelRaised;
-        if (step.AutoCompleted && step.ManualCompleted)
-        {
-            status = "AUTO + MANUAL";
-            statusColor = Blue;
-            rowBackground = BluePanel;
-        }
-        else if (step.AutoCompleted)
-        {
-            status = "AUTO-DETECTED";
-            statusColor = Blue;
-            rowBackground = BluePanel;
-        }
-        else if (step.ManualCompleted)
-        {
-            status = "MANUAL";
-            statusColor = Green;
-            rowBackground = GreenPanel;
-        }
-        else if (index == next)
-        {
-            status = "NEXT";
-            statusColor = Gold;
-            rowBackground = GoldPanel;
-        }
-
-        ImGui.PushID(index);
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, rowBackground);
-        if (ImGui.BeginChild("##feedListRow", new Vector2(0, 72 * ImGuiHelpers.GlobalScale), true,
-                ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
-        {
-            if (ImGui.BeginTable("##feedListRowColumns", 4, ImGuiTableFlags.SizingStretchProp))
-            {
-                ImGui.TableSetupColumn("Step", ImGuiTableColumnFlags.WidthFixed, 46 * ImGuiHelpers.GlobalScale);
-                ImGui.TableSetupColumn("FruitIcon", ImGuiTableColumnFlags.WidthFixed, 42 * ImGuiHelpers.GlobalScale);
-                ImGui.TableSetupColumn("Fruit", ImGuiTableColumnFlags.WidthStretch, 1f);
-                ImGui.TableSetupColumn("StatusAndControls", ImGuiTableColumnFlags.WidthFixed,
-                    220 * ImGuiHelpers.GlobalScale);
-                ImGui.TableNextRow();
-
-                ImGui.TableNextColumn();
-                ImGui.AlignTextToFramePadding();
-                ImGui.TextColored(statusColor, $"#{index + 1}");
-
-                ImGui.TableNextColumn();
-                DrawFruitIcon(fruit, 34);
-
-                ImGui.TableNextColumn();
-                ImGui.AlignTextToFramePadding();
-                ImGui.TextUnformatted(plugin.LocalizedFruitName(fruit));
-                ImGui.TextDisabled($"Predicted RGB {predictedRgb.R}/{predictedRgb.G}/{predictedRgb.B}");
-
-                ImGui.TableNextColumn();
-                ImGui.AlignTextToFramePadding();
-                ImGui.TextColored(statusColor, status);
-                var manual = step.ManualCompleted;
-                var canEdit = index == next || manual || step.AutoCompleted;
-                ImGui.BeginDisabled(!canEdit);
-                if (ImGui.Checkbox("Manual##feedListManual", ref manual))
-                    plugin.SetManualStep(index, manual);
-                ImGui.EndDisabled();
-                ImGui.SameLine();
-                var automatic = step.AutoCompleted;
-                ImGui.BeginDisabled();
-                ImGui.Checkbox("Auto##feedListAuto", ref automatic);
-                ImGui.EndDisabled();
-
-                ImGui.EndTable();
-            }
-        }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
-        ImGui.PopID();
-    }
-
-    private void DrawTrackingOptions(ActivePlanState plan)
+    private void DrawNextStep(ActivePlanState plan, float deltaTime)
     {
         var next = plan.NextStepIndex;
         var completed = plan.CompletedCount;
+        var targetProgress = plan.Steps.Count == 0 ? 1f : (float)completed / plan.Steps.Count;
+        displayedProgress = SmoothTowards(displayedProgress, targetProgress, 7f, deltaTime);
+        var accent = next < 0 ? Success : AccentGold;
+        var panel = next < 0 ? GreenGlass : GoldGlass;
 
+        BeginGlassPanel("##nextStep", new Vector2(0, 154 * ImGuiHelpers.GlobalScale), panel, accent, AccentCoral);
+        if (next < 0)
+        {
+            ImGui.TextColored(Success, "ROUTE COMPLETE");
+            ImGui.TextColored(TextPrimary, "All fruit has been accounted for.");
+            ImGui.TextWrapped("Leave your chocobo stabled for six Earth hours. Removing it early cancels the pending color change.");
+        }
+        else
+        {
+            var fruit = (FruitKind)plan.Steps[next].FruitKind;
+            DrawFruitIcon(fruit, 68);
+            ImGui.SameLine();
+            ImGui.BeginGroup();
+            ImGui.TextColored(AccentGold, $"NEXT FEED  ·  STEP {next + 1} OF {plan.Steps.Count}");
+            ImGui.TextColored(TextPrimary, plugin.LocalizedFruitName(fruit));
+            ImGui.TextColored(TextMuted, "Feed exactly one. Manual or automatic detection will advance the route.");
+            ImGui.EndGroup();
+        }
+
+        ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
+        DrawAnimatedProgress(displayedProgress, accent, AccentBlue, $"{completed} / {plan.Steps.Count}");
+        EndGlassPanel();
+    }
+
+    private void DrawTrackingOptions(ActivePlanState plan, float deltaTime)
+    {
+        BeginGlassPanel("##trackingPanel", new Vector2(0, 112 * ImGuiHelpers.GlobalScale), Glass, AccentBlue, AccentViolet);
+        ImGui.TextColored(TextMuted, "LIVE TRACKING");
         if (ImGui.BeginTable("##trackingControls", 2, ImGuiTableFlags.SizingStretchProp))
         {
             ImGui.TableSetupColumn("Options", ImGuiTableColumnFlags.WidthStretch, 1f);
-            ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags.WidthFixed, 375 * ImGuiHelpers.GlobalScale);
+            ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags.WidthFixed, 430 * ImGuiHelpers.GlobalScale);
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
 
@@ -522,7 +392,7 @@ public sealed class MainWindow : Window, IDisposable
                 plugin.Configuration.Save();
             }
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Checks the Auto column when FFXIV reports that your chocobo ate the expected fruit.");
+                ImGui.SetTooltip("Advances when FFXIV reports that the expected fruit was consumed.");
 
             ImGui.SameLine();
             var print = plugin.Configuration.PrintNextStepToChat;
@@ -533,122 +403,169 @@ public sealed class MainWindow : Window, IDisposable
             }
 
             ImGui.TableNextColumn();
+            var next = plan.NextStepIndex;
             ImGui.BeginDisabled(next < 0);
-            if (ImGui.Button("Confirm next manually"))
+            if (CompactButton("CONFIRM NEXT##confirm", new Vector2(128, 32) * ImGuiHelpers.GlobalScale, Success, deltaTime))
                 plugin.MarkNextManually();
             ImGui.EndDisabled();
             ImGui.SameLine();
-            ImGui.BeginDisabled(completed == 0);
-            if (ImGui.Button("Undo"))
+            ImGui.BeginDisabled(plan.CompletedCount == 0);
+            if (CompactButton("UNDO##undo", new Vector2(68, 32) * ImGuiHelpers.GlobalScale, AccentBlue, deltaTime))
                 plugin.UndoLastStep();
             ImGui.EndDisabled();
             ImGui.SameLine();
-            if (ImGui.Button("Reset"))
+            if (CompactButton("RESET##reset", new Vector2(68, 32) * ImGuiHelpers.GlobalScale, AccentGold, deltaTime))
                 plugin.ResetProgress();
             ImGui.SameLine();
-            if (ImGui.Button("Clear"))
+            if (CompactButton("CLEAR##clear", new Vector2(68, 32) * ImGuiHelpers.GlobalScale, Danger, deltaTime))
                 plugin.ClearPlan();
             ImGui.EndTable();
         }
+        EndGlassPanel();
 
         if (!string.IsNullOrWhiteSpace(plugin.Configuration.LastDetectionNotice))
         {
             var isError = plugin.Configuration.LastDetectionNotice.StartsWith("Detected ", StringComparison.Ordinal);
-            ImGui.PushStyleColor(ImGuiCol.Text, isError ? Red : Green);
-            ImGui.TextWrapped(plugin.Configuration.LastDetectionNotice);
-            ImGui.PopStyleColor();
+            ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
+            DrawNotice(
+                isError ? "DETECTION MISMATCH" : "AUTOMATIC DETECTION",
+                plugin.Configuration.LastDetectionNotice,
+                isError ? Danger : Success,
+                isError ? GoldGlass : GreenGlass);
         }
     }
 
     private void DrawStepTable(ActivePlanState plan)
     {
-        ImGui.TextColored(Gold, "ORDERED FEEDING ROUTE");
-        ImGui.SameLine();
-        var hide = plugin.Configuration.HideCompletedSteps;
-        if (ImGui.Checkbox("Hide completed", ref hide))
+        BeginGlassPanel("##routeListPanel", new Vector2(0, 455 * ImGuiHelpers.GlobalScale), Glass, AccentViolet, AccentBlue);
+        if (ImGui.BeginTable("##routeListHeader", 2, ImGuiTableFlags.SizingStretchProp))
         {
-            plugin.Configuration.HideCompletedSteps = hide;
-            plugin.Configuration.Save();
+            ImGui.TableSetupColumn("Title", ImGuiTableColumnFlags.WidthStretch, 1f);
+            ImGui.TableSetupColumn("Filter", ImGuiTableColumnFlags.WidthFixed, 150 * ImGuiHelpers.GlobalScale);
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.TextColored(TextPrimary, "ORDERED FEEDING ROUTE");
+            ImGui.TextColored(TextMuted, "One scrollable list · current step highlighted · progress saved automatically");
+            ImGui.TableNextColumn();
+            var hide = plugin.Configuration.HideCompletedSteps;
+            if (ImGui.Checkbox("Hide completed", ref hide))
+            {
+                plugin.Configuration.HideCompletedSteps = hide;
+                plugin.Configuration.Save();
+            }
+            ImGui.EndTable();
         }
+        ImGui.Dummy(new Vector2(1, 5) * ImGuiHelpers.GlobalScale);
 
-        if (!ImGui.BeginTable("##routeSteps", 7,
+        if (ImGui.BeginTable("##routeSteps", 7,
                 ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY |
                 ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX,
-                new Vector2(0, 360 * ImGuiHelpers.GlobalScale)))
-            return;
-
-        ImGui.TableSetupScrollFreeze(0, 1);
-        ImGui.TableSetupColumn("Step", ImGuiTableColumnFlags.WidthFixed, 52 * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthFixed, 38 * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("Fruit", ImGuiTableColumnFlags.WidthStretch, 1f);
-        ImGui.TableSetupColumn("Status", ImGuiTableColumnFlags.WidthFixed, 78 * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("Manual", ImGuiTableColumnFlags.WidthFixed, 66 * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("Auto", ImGuiTableColumnFlags.WidthFixed, 54 * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("Predicted RGB", ImGuiTableColumnFlags.WidthFixed, 108 * ImGuiHelpers.GlobalScale);
-        ImGui.TableHeadersRow();
-
-        var next = plan.NextStepIndex;
-        var rgb = new RgbColor(plan.StartR, plan.StartG, plan.StartB);
-        for (var i = 0; i < plan.Steps.Count; i++)
+                new Vector2(0, -1)))
         {
-            var step = plan.Steps[i];
-            var fruit = (FruitKind)step.FruitKind;
-            rgb = ChocoboData.Fruit(fruit).Apply(rgb);
-            if (hide && step.IsComplete)
-                continue;
+            ImGui.TableSetupScrollFreeze(0, 1);
+            ImGui.TableSetupColumn("STEP", ImGuiTableColumnFlags.WidthFixed, 58 * ImGuiHelpers.GlobalScale);
+            ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthFixed, 42 * ImGuiHelpers.GlobalScale);
+            ImGui.TableSetupColumn("FRUIT", ImGuiTableColumnFlags.WidthStretch, 1f);
+            ImGui.TableSetupColumn("STATUS", ImGuiTableColumnFlags.WidthFixed, 108 * ImGuiHelpers.GlobalScale);
+            ImGui.TableSetupColumn("MANUAL", ImGuiTableColumnFlags.WidthFixed, 70 * ImGuiHelpers.GlobalScale);
+            ImGui.TableSetupColumn("AUTO", ImGuiTableColumnFlags.WidthFixed, 58 * ImGuiHelpers.GlobalScale);
+            ImGui.TableSetupColumn("RGB AFTER", ImGuiTableColumnFlags.WidthFixed, 106 * ImGuiHelpers.GlobalScale);
+            ImGui.TableHeadersRow();
 
-            ImGui.TableNextRow(ImGuiTableRowFlags.None, 34 * ImGuiHelpers.GlobalScale);
-            if (i == next)
-                ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(new Vector4(0.30f, 0.21f, 0.06f, 0.72f)));
-            else if (step.IsComplete)
-                ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(new Vector4(0.06f, 0.19f, 0.11f, 0.58f)));
+            var next = plan.NextStepIndex;
+            var rgb = new RgbColor(plan.StartR, plan.StartG, plan.StartB);
+            var visible = 0;
+            for (var i = 0; i < plan.Steps.Count; i++)
+            {
+                var step = plan.Steps[i];
+                var fruit = (FruitKind)step.FruitKind;
+                rgb = ChocoboData.Fruit(fruit).Apply(rgb);
+                if (plugin.Configuration.HideCompletedSteps && step.IsComplete)
+                    continue;
 
-            ImGui.TableNextColumn();
-            ImGui.AlignTextToFramePadding();
-            ImGui.TextUnformatted((i + 1).ToString());
+                visible++;
+                DrawRouteRow(step, fruit, i, next, rgb);
+            }
 
-            ImGui.TableNextColumn();
-            DrawFruitIcon(fruit, 28);
-
-            ImGui.TableNextColumn();
-            ImGui.AlignTextToFramePadding();
-            ImGui.TextUnformatted(plugin.LocalizedFruitName(fruit));
-
-            ImGui.TableNextColumn();
-            ImGui.AlignTextToFramePadding();
-            if (step.IsComplete)
-                ImGui.TextColored(Green, "Done");
-            else if (i == next)
-                ImGui.TextColored(Gold, "Next");
-            else
-                ImGui.TextDisabled("Queued");
-
-            ImGui.TableNextColumn();
-            var manual = step.ManualCompleted;
-            var canEdit = i == next || manual || step.AutoCompleted;
-            ImGui.BeginDisabled(!canEdit);
-            if (ImGui.Checkbox($"##manual{i}", ref manual))
-                plugin.SetManualStep(i, manual);
-            ImGui.EndDisabled();
-
-            ImGui.TableNextColumn();
-            var automatic = step.AutoCompleted;
-            ImGui.BeginDisabled();
-            ImGui.Checkbox($"##auto{i}", ref automatic);
-            ImGui.EndDisabled();
-
-            ImGui.TableNextColumn();
-            ImGui.AlignTextToFramePadding();
-            ImGui.TextDisabled($"{rgb.R}/{rgb.G}/{rgb.B}");
+            if (visible == 0)
+            {
+                ImGui.TableNextRow(ImGuiTableRowFlags.None, 54 * ImGuiHelpers.GlobalScale);
+                ImGui.TableNextColumn();
+                ImGui.TableSetColumnIndex(2);
+                ImGui.TextColored(Success, "All feeding steps are complete.");
+            }
+            ImGui.EndTable();
         }
-        ImGui.EndTable();
+        EndGlassPanel();
+    }
+
+    private void DrawRouteRow(TrackedStepState step, FruitKind fruit, int index, int next, RgbColor rgb)
+    {
+        var status = "QUEUED";
+        var statusColor = TextMuted;
+        if (step.AutoCompleted)
+        {
+            status = step.ManualCompleted ? "AUTO + MANUAL" : "AUTO-DETECTED";
+            statusColor = AccentBlue;
+        }
+        else if (step.ManualCompleted)
+        {
+            status = "MANUAL";
+            statusColor = Success;
+        }
+        else if (index == next)
+        {
+            status = "NEXT";
+            statusColor = AccentGold;
+        }
+
+        ImGui.TableNextRow(ImGuiTableRowFlags.None, 42 * ImGuiHelpers.GlobalScale);
+        if (index == next)
+            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(new Vector4(0.26f, 0.17f, 0.055f, 0.78f)));
+        else if (step.AutoCompleted)
+            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(new Vector4(0.04f, 0.13f, 0.23f, 0.66f)));
+        else if (step.ManualCompleted)
+            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(new Vector4(0.035f, 0.16f, 0.105f, 0.62f)));
+
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextColored(statusColor, $"{index + 1:00}");
+
+        ImGui.TableNextColumn();
+        DrawFruitIcon(fruit, 30);
+
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextColored(TextPrimary, plugin.LocalizedFruitName(fruit));
+
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextColored(statusColor, status);
+
+        ImGui.TableNextColumn();
+        var manual = step.ManualCompleted;
+        var canEdit = index == next || manual || step.AutoCompleted;
+        ImGui.BeginDisabled(!canEdit);
+        if (ImGui.Checkbox($"##manual{index}", ref manual))
+            plugin.SetManualStep(index, manual);
+        ImGui.EndDisabled();
+
+        ImGui.TableNextColumn();
+        var automatic = step.AutoCompleted;
+        ImGui.BeginDisabled();
+        ImGui.Checkbox($"##auto{index}", ref automatic);
+        ImGui.EndDisabled();
+
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextColored(TextMuted, $"{rgb.R}/{rgb.G}/{rgb.B}");
     }
 
     private bool DrawColorCombo(string id, ref int index)
     {
         var changed = false;
         var selected = ChocoboData.Colors[index];
-        if (!ImGui.BeginCombo(id, $"Select color...##{selected.Name}"))
+        if (!ImGui.BeginCombo(id, $"{selected.Name}##{selected.Name}"))
             return false;
 
         for (var i = 0; i < ChocoboData.Colors.Count; i++)
@@ -657,7 +574,7 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.PushID(i);
             DrawSmallSwatch(color.Rgb, "combo");
             ImGui.SameLine();
-            if (ImGui.Selectable($"{color.Name}   RGB {color.Rgb.R}/{color.Rgb.G}/{color.Rgb.B}", i == index))
+            if (ImGui.Selectable($"{color.Name}   ·   {color.Rgb.R}/{color.Rgb.G}/{color.Rgb.B}", i == index))
             {
                 index = i;
                 changed = true;
@@ -687,28 +604,237 @@ public sealed class MainWindow : Window, IDisposable
             return;
         }
 
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.GetWindowDrawList().AddCircleFilled(
+            min + size / 2 + new Vector2(0, 2 * ImGuiHelpers.GlobalScale),
+            size.X * 0.56f,
+            ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.28f)));
         ImGui.Image(texture.Handle, size);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(plugin.LocalizedFruitName(fruit));
     }
 
-    private static void DrawLargeSwatch(RgbColor rgb, string id)
+    private static void DrawModernSwatch(RgbColor rgb, float logicalSize)
     {
-        var color = ToVector(rgb);
-        ImGui.ColorButton(id, color,
-            ImGuiColorEditFlags.NoTooltip | ImGuiColorEditFlags.NoDragDrop | ImGuiColorEditFlags.NoPicker,
-            new Vector2(42, 42) * ImGuiHelpers.GlobalScale);
+        var size = new Vector2(logicalSize) * ImGuiHelpers.GlobalScale;
+        var min = ImGui.GetCursorScreenPos();
+        var max = min + size;
+        var drawList = ImGui.GetWindowDrawList();
+        drawList.AddRectFilled(
+            min + new Vector2(0, 4 * ImGuiHelpers.GlobalScale),
+            max + new Vector2(0, 4 * ImGuiHelpers.GlobalScale),
+            ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.34f)),
+            13 * ImGuiHelpers.GlobalScale);
+        drawList.AddRectFilled(min, max, ImGui.GetColorU32(ToVector(rgb)), 13 * ImGuiHelpers.GlobalScale);
+        drawList.AddLine(
+            min + new Vector2(7, 7) * ImGuiHelpers.GlobalScale,
+            new Vector2(max.X - 7 * ImGuiHelpers.GlobalScale, min.Y + 7 * ImGuiHelpers.GlobalScale),
+            ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.34f)),
+            2 * ImGuiHelpers.GlobalScale);
+        ImGui.Dummy(size);
     }
 
     private static void DrawSmallSwatch(RgbColor rgb, string id)
     {
         ImGui.ColorButton(id, ToVector(rgb),
             ImGuiColorEditFlags.NoTooltip | ImGuiColorEditFlags.NoDragDrop | ImGuiColorEditFlags.NoPicker,
-            new Vector2(17, 17) * ImGuiHelpers.GlobalScale);
+            new Vector2(18, 18) * ImGuiHelpers.GlobalScale);
     }
 
     private static Vector4 ToVector(RgbColor rgb) =>
         new(rgb.R / 255f, rgb.G / 255f, rgb.B / 255f, 1f);
+
+    private static void DrawSectionHeading(string title, string subtitle)
+    {
+        ImGui.TextColored(TextPrimary, title);
+        ImGui.SameLine();
+        ImGui.TextColored(TextMuted, subtitle);
+        var min = ImGui.GetCursorScreenPos();
+        var width = ImGui.GetContentRegionAvail().X;
+        ImGui.GetWindowDrawList().AddRectFilledMultiColor(
+            min,
+            min + new Vector2(width, 2 * ImGuiHelpers.GlobalScale),
+            ImGui.GetColorU32(AccentViolet),
+            ImGui.GetColorU32(AccentBlue),
+            ImGui.GetColorU32(AccentBlue),
+            ImGui.GetColorU32(AccentViolet));
+        ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
+    }
+
+    private static void DrawNotice(string title, string body, Vector4 accent, Vector4 background)
+    {
+        var lines = Math.Max(1, (int)MathF.Ceiling(ImGui.CalcTextSize(body).X / Math.Max(300, ImGui.GetContentRegionAvail().X - 40)));
+        var height = (54 + lines * 15) * ImGuiHelpers.GlobalScale;
+        BeginGlassPanel($"##notice{title}", new Vector2(0, height), background, accent, accent);
+        ImGui.TextColored(accent, title);
+        ImGui.TextWrapped(body);
+        EndGlassPanel();
+    }
+
+    private static void DrawAnimatedProgress(float fraction, Vector4 left, Vector4 right, string label)
+    {
+        fraction = Math.Clamp(fraction, 0f, 1f);
+        var height = 12 * ImGuiHelpers.GlobalScale;
+        var min = ImGui.GetCursorScreenPos();
+        var labelWidth = ImGui.CalcTextSize(label).X;
+        var width = Math.Max(height, ImGui.GetContentRegionAvail().X - labelWidth - 14 * ImGuiHelpers.GlobalScale);
+        var max = min + new Vector2(width, height);
+        var drawList = ImGui.GetWindowDrawList();
+        drawList.AddRectFilled(min, max, ImGui.GetColorU32(new Vector4(0.015f, 0.02f, 0.035f, 0.88f)), height / 2);
+        if (fraction > 0.001f)
+        {
+            var fillMax = min + new Vector2(Math.Max(height, width * fraction), height);
+            drawList.AddRectFilledMultiColor(
+                min,
+                fillMax,
+                ImGui.GetColorU32(left),
+                ImGui.GetColorU32(right),
+                ImGui.GetColorU32(right),
+                ImGui.GetColorU32(left));
+            var shimmer = 0.5f + 0.5f * MathF.Sin((float)ImGui.GetTime() * 2.5f);
+            var shimmerX = min.X + (fillMax.X - min.X) * shimmer;
+            drawList.AddLine(
+                new Vector2(shimmerX, min.Y + 1),
+                new Vector2(shimmerX, max.Y - 1),
+                ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.45f)),
+                2 * ImGuiHelpers.GlobalScale);
+        }
+        ImGui.Dummy(new Vector2(width, height));
+        ImGui.SameLine();
+        ImGui.TextColored(TextMuted, label);
+    }
+
+    private bool GradientButton(
+        string label,
+        Vector2 size,
+        Vector4 left,
+        Vector4 right,
+        float deltaTime)
+    {
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.InvisibleButton(label, size);
+        var clicked = ImGui.IsItemClicked();
+        var hover = AnimateHover(label, ImGui.IsItemHovered(), deltaTime);
+        var activeOffset = ImGui.IsItemActive() ? 2 * ImGuiHelpers.GlobalScale : 0f;
+        min.Y += activeOffset;
+        var max = min + size;
+        var drawList = ImGui.GetWindowDrawList();
+        drawList.AddRectFilled(
+            min + new Vector2(0, 5 * ImGuiHelpers.GlobalScale),
+            max + new Vector2(0, 5 * ImGuiHelpers.GlobalScale),
+            ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.32f)),
+            10 * ImGuiHelpers.GlobalScale);
+        drawList.AddRectFilledMultiColor(
+            min,
+            max,
+            ImGui.GetColorU32(Lerp(left, new Vector4(0.78f, 0.55f, 1f, 1f), hover)),
+            ImGui.GetColorU32(Lerp(right, new Vector4(0.42f, 0.84f, 1f, 1f), hover)),
+            ImGui.GetColorU32(Lerp(right, new Vector4(0.35f, 0.70f, 0.96f, 1f), hover)),
+            ImGui.GetColorU32(Lerp(left, new Vector4(0.52f, 0.30f, 0.86f, 1f), hover)));
+        DrawButtonText(drawList, label, min, max, TextPrimary);
+        return clicked;
+    }
+
+    private bool GlassButton(string label, Vector2 size, float deltaTime) =>
+        CompactButton(label, size, AccentBlue, deltaTime);
+
+    private bool NavigationButton(string label, bool selected, float deltaTime)
+    {
+        var accent = selected ? AccentGold : AccentBlue;
+        return CompactButton(label, new Vector2(104, 38) * ImGuiHelpers.GlobalScale, accent, deltaTime, selected);
+    }
+
+    private bool CompactButton(
+        string label,
+        Vector2 size,
+        Vector4 accent,
+        float deltaTime,
+        bool selected = false)
+    {
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.InvisibleButton(label, size);
+        var clicked = ImGui.IsItemClicked();
+        var hover = AnimateHover(label, ImGui.IsItemHovered(), deltaTime);
+        var max = min + size;
+        var baseColor = selected
+            ? new Vector4(accent.X * 0.36f, accent.Y * 0.36f, accent.Z * 0.36f, 0.92f)
+            : new Vector4(0.10f, 0.12f, 0.18f, 0.88f);
+        var color = Lerp(baseColor, new Vector4(accent.X * 0.42f, accent.Y * 0.42f, accent.Z * 0.42f, 0.96f), hover);
+        var drawList = ImGui.GetWindowDrawList();
+        drawList.AddRectFilled(min, max, ImGui.GetColorU32(color), 9 * ImGuiHelpers.GlobalScale);
+        drawList.AddRectFilled(
+            new Vector2(min.X + 8 * ImGuiHelpers.GlobalScale, max.Y - 2 * ImGuiHelpers.GlobalScale),
+            new Vector2(max.X - 8 * ImGuiHelpers.GlobalScale, max.Y),
+            ImGui.GetColorU32(new Vector4(accent.X, accent.Y, accent.Z, selected ? 0.95f : 0.45f + hover * 0.45f)),
+            ImGuiHelpers.GlobalScale);
+        DrawButtonText(drawList, label, min, max, selected ? accent : TextPrimary);
+        return clicked;
+    }
+
+    private float AnimateHover(string id, bool hovered, float deltaTime)
+    {
+        var current = hoverAnimations.GetValueOrDefault(id);
+        current = SmoothTowards(current, hovered ? 1f : 0f, 14f, deltaTime);
+        hoverAnimations[id] = current;
+        return current;
+    }
+
+    private static void DrawButtonText(
+        ImDrawListPtr drawList,
+        string label,
+        Vector2 min,
+        Vector2 max,
+        Vector4 color)
+    {
+        var visibleLabel = label.Split("##", StringSplitOptions.None)[0];
+        var textSize = ImGui.CalcTextSize(visibleLabel);
+        var textPosition = min + (max - min - textSize) / 2;
+        drawList.AddText(textPosition, ImGui.GetColorU32(color), visibleLabel);
+    }
+
+    private static Vector4 Lerp(Vector4 from, Vector4 to, float amount) => from + (to - from) * amount;
+
+    private static void BeginGlassPanel(
+        string id,
+        Vector2 size,
+        Vector4 background,
+        Vector4 gradientLeft,
+        Vector4 gradientRight)
+    {
+        var min = ImGui.GetCursorScreenPos();
+        if (size.X <= 0)
+            size.X = ImGui.GetContentRegionAvail().X;
+        var max = min + size;
+        var rounding = 14 * ImGuiHelpers.GlobalScale;
+        var drawList = ImGui.GetWindowDrawList();
+        drawList.AddRectFilled(
+            min + new Vector2(0, 6 * ImGuiHelpers.GlobalScale),
+            max + new Vector2(0, 6 * ImGuiHelpers.GlobalScale),
+            ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.28f)),
+            rounding);
+        drawList.AddRectFilled(min, max, ImGui.GetColorU32(background), rounding);
+        drawList.AddRectFilledMultiColor(
+            min,
+            new Vector2(max.X, min.Y + 2 * ImGuiHelpers.GlobalScale),
+            ImGui.GetColorU32(gradientLeft),
+            ImGui.GetColorU32(gradientRight),
+            ImGui.GetColorU32(gradientRight),
+            ImGui.GetColorU32(gradientLeft));
+        drawList.AddLine(
+            min + new Vector2(12, 1) * ImGuiHelpers.GlobalScale,
+            new Vector2(max.X - 12 * ImGuiHelpers.GlobalScale, min.Y + ImGuiHelpers.GlobalScale),
+            ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.12f)),
+            ImGuiHelpers.GlobalScale);
+
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0f, 0f, 0f, 0f));
+        ImGui.BeginChild(id, size, false, ImGuiWindowFlags.NoBackground);
+    }
+
+    private static void EndGlassPanel()
+    {
+        ImGui.EndChild();
+        ImGui.PopStyleColor();
+    }
 
     private static void CenteredText(string text, Vector4 color)
     {
@@ -717,56 +843,76 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.TextColored(color, text);
     }
 
-    private static void DrawHelp()
+    private static void CenteredInColumn(string text, Vector4 color)
     {
-        DrawHelpCard(
-            "1. CHOOSE COLORS",
-            "Select the plumage your chocobo currently shows and the color you want. If your chocobo " +
-            "has been recolored before, its exact hidden RGB is unknown; a Han Lemon reset to Desert " +
-            "Yellow gives the most reliable starting point.",
-            GoldPanel);
-
-        DrawHelpCard(
-            "2. FOLLOW THE ORDER",
-            "The accepted model estimates each fruit at 5 RGB points. Channels clamp at 0 and 255, so " +
-            "order matters. Feed only the listed items from top to bottom. A feather-growth message means " +
-            "a color boundary was crossed; its absence is not a reason to add extra fruit.",
-            PanelRaised);
-
-        DrawHelpCard(
-            "3. TRACK EACH FEED",
-            "The Manual checkbox is always yours to control. The Auto checkbox is filled when the game " +
-            "reports that your chocobo ate the expected localized fruit. Automatic tracking never clicks " +
-            "the game UI, uses an item, hides chat, or reads process memory. Switch between Card and List " +
-            "views at any time; in List view the next step is gold, manual completions are green, and " +
-            "auto-detected completions are blue.",
-            PanelRaised);
-
-        DrawHelpCard(
-            "4. WAIT SIX HOURS",
-            "Once every step is complete, leave the chocobo stabled for six Earth hours. Removing it " +
-            "from the stable early cancels the pending plumage change.",
-            GreenPanel);
-
-        ImGui.Spacing();
-        ImGui.TextColored(Gold, "WHY RELIABLE TARGET?");
-        ImGui.TextWrapped(
-            "Named colors occupy regions around published RGB swatches. Reliable target chooses the closest " +
-            "reachable point that still resolves to the desired color. This stays faithful to observed recipes " +
-            "while avoiding endpoints that resolve to a neighboring color under the accepted model.");
+        var width = ImGui.CalcTextSize(text).X;
+        var available = ImGui.GetContentRegionAvail().X;
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + Math.Max(0, (available - width) / 2));
+        ImGui.TextColored(color, text);
     }
 
-    private static void DrawHelpCard(string title, string body, Vector4 background)
+    private static void DrawHelp()
     {
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, background);
-        if (ImGui.BeginChild($"##{title}", new Vector2(0, 96 * ImGuiHelpers.GlobalScale), true,
-                ImGuiWindowFlags.NoScrollbar))
+        DrawSectionHeading("HOW IT WORKS", "A simple four-step workflow built around the reliable calculation model.");
+        DrawHelpCard(
+            "01",
+            "CHOOSE COLORS",
+            "Select the plumage your chocobo currently shows and the color you want. A Han Lemon reset to Desert Yellow provides the most reliable baseline.",
+            AccentGold,
+            GoldGlass);
+        DrawHelpCard(
+            "02",
+            "FOLLOW THE ORDER",
+            "Feed only the listed fruit from top to bottom. The exact algebraic route is arranged to reach its selected RGB endpoint without unintended clamping.",
+            AccentBlue,
+            BlueGlass);
+        DrawHelpCard(
+            "03",
+            "TRACK EVERY FEED",
+            "Automatic detection fills the Auto column when the expected fruit is consumed. You can always use Manual, Undo, Reset, or Clear without losing control.",
+            AccentViolet,
+            GlassRaised);
+        DrawHelpCard(
+            "04",
+            "WAIT SIX HOURS",
+            "After every step is complete, leave the chocobo stabled for six Earth hours. Removing it early cancels the pending plumage change.",
+            Success,
+            GreenGlass);
+
+        DrawNotice(
+            "WHY RELIABLE TARGET?",
+            "Every one of the 7,225 named start/target combinations uses the same reliable policy. It stays close to the published swatch when safely possible, falls back to a deeper point near tight neighbors, and verifies that the ordered route reaches the selected endpoint exactly.",
+            AccentGold,
+            Glass);
+        ImGui.Dummy(new Vector2(1, 6) * ImGuiHelpers.GlobalScale);
+        DrawNotice(
+            "FEATHER MESSAGE",
+            "A feather-growth message means the pending color crossed a named-color boundary. Its absence does not mean the fruit failed, so never add extra fruit unless it appears in the calculated list.",
+            AccentBlue,
+            BlueGlass);
+    }
+
+    private static void DrawHelpCard(
+        string number,
+        string title,
+        string body,
+        Vector4 accent,
+        Vector4 background)
+    {
+        BeginGlassPanel($"##help{number}", new Vector2(0, 106 * ImGuiHelpers.GlobalScale), background, accent, accent);
+        if (ImGui.BeginTable($"##helpLayout{number}", 2, ImGuiTableFlags.SizingStretchProp))
         {
-            ImGui.TextColored(Gold, title);
+            ImGui.TableSetupColumn("Number", ImGuiTableColumnFlags.WidthFixed, 58 * ImGuiHelpers.GlobalScale);
+            ImGui.TableSetupColumn("Copy", ImGuiTableColumnFlags.WidthStretch, 1f);
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.TextColored(accent, number);
+            ImGui.TableNextColumn();
+            ImGui.TextColored(TextPrimary, title);
             ImGui.TextWrapped(body);
+            ImGui.EndTable();
         }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
-        ImGui.Spacing();
+        EndGlassPanel();
+        ImGui.Dummy(new Vector2(1, 7) * ImGuiHelpers.GlobalScale);
     }
 }
