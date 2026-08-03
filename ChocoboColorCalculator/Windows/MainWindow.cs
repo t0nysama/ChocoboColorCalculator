@@ -122,7 +122,6 @@ public sealed class MainWindow : Window, IDisposable
     {
         var height = 88 * ImGuiHelpers.GlobalScale;
         BeginGlassPanel("##heroHeader", new Vector2(0, height), GlassRaised, AccentViolet, AccentBlue);
-        ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
         if (ImGui.BeginTable("##headerLayout", 2, ImGuiTableFlags.SizingStretchProp))
         {
             ImGui.TableSetupColumn("Brand", ImGuiTableColumnFlags.WidthStretch, 1f);
@@ -658,7 +657,7 @@ public sealed class MainWindow : Window, IDisposable
         var scale = ImGuiHelpers.GlobalScale;
         var contentWidth = Math.Max(1, ImGui.GetContentRegionAvail().X - 24 * scale);
         var bodyHeight = ImGui.CalcTextSize(body, false, contentWidth).Y;
-        var height = 22 * scale + ImGui.GetTextLineHeight() + bodyHeight;
+        var height = 26 * scale + ImGui.GetTextLineHeight() + bodyHeight;
         BeginGlassPanel($"##notice{title}", new Vector2(0, height), background, accent, accent);
         ImGui.TextColored(accent, title);
         ImGui.TextWrapped(body);
@@ -827,6 +826,7 @@ public sealed class MainWindow : Window, IDisposable
             size,
             false,
             ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 4 * ImGuiHelpers.GlobalScale);
     }
 
     private static void EndGlassPanel()
