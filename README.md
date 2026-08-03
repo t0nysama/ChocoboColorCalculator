@@ -2,6 +2,26 @@
 
 A Dalamud API 15 plugin that calculates and tracks an ordered companion-chocobo fruit route entirely in game.
 
+## Install with Dalamud
+
+> **Dalamud custom repository URL — copy this entire line:**
+
+```text
+https://raw.githubusercontent.com/t0nysama/ChocoboColorCalculator/main/repo.json
+```
+
+1. Launch Final Fantasy XIV through XIVLauncher and wait for Dalamud to load.
+2. Enter `/xlsettings` in the in-game chat window.
+3. Open the **Experimental** tab.
+4. Find **Custom Plugin Repositories**, paste the URL above into an empty field, and select the **+** button.
+5. Select **Save and Close**.
+6. Enter `/xlplugins` in chat to open the Dalamud Plugin Installer.
+7. Search for **Chocobo Color Calculator**, select it, and choose **Install**.
+
+Open the calculator with `/chococolor`. Future releases will appear through Dalamud's normal plugin update system as long as the custom repository remains enabled.
+
+This is a third-party custom-repository plugin and is not part of Dalamud's official plugin repository. Support for this plugin should be requested through this GitHub project rather than the XIVLauncher support channels.
+
 ## What is implemented
 
 - All 85 named companion colors and their published RGB values.
