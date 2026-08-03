@@ -32,6 +32,8 @@ public sealed class MainWindow : Window, IDisposable
     private float routeReveal = 1f;
     private DateTime observedPlanCreatedAt;
     private bool showGuide;
+    private string currentColorSearch = string.Empty;
+    private string targetColorSearch = string.Empty;
 
     public MainWindow(Plugin plugin)
         : base("Chocobo Color Calculator##Main")
@@ -194,7 +196,12 @@ public sealed class MainWindow : Window, IDisposable
 
         ImGui.TableNextColumn();
         var currentIndex = plugin.Configuration.CurrentColorIndex;
-        if (DrawColorSelectorCard("CURRENT PLUMAGE", "##currentColor", ref currentIndex, AccentBlue))
+        if (DrawColorSelectorCard(
+                "CURRENT PLUMAGE",
+                "##currentColor",
+                ref currentIndex,
+                ref currentColorSearch,
+                AccentBlue))
         {
             plugin.Configuration.CurrentColorIndex = currentIndex;
             plugin.Configuration.Save();
@@ -208,7 +215,12 @@ public sealed class MainWindow : Window, IDisposable
 
         ImGui.TableNextColumn();
         var targetIndex = plugin.Configuration.TargetColorIndex;
-        if (DrawColorSelectorCard("DESIRED PLUMAGE", "##targetColor", ref targetIndex, AccentViolet))
+        if (DrawColorSelectorCard(
+                "DESIRED PLUMAGE",
+                "##targetColor",
+                ref targetIndex,
+                ref targetColorSearch,
+                AccentViolet))
         {
             plugin.Configuration.TargetColorIndex = targetIndex;
             plugin.Configuration.Save();
@@ -217,7 +229,12 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.EndTable();
     }
 
-    private bool DrawColorSelectorCard(string heading, string comboId, ref int index, Vector4 accent)
+    private bool DrawColorSelectorCard(
+        string heading,
+        string comboId,
+        ref int index,
+        ref string searchText,
+        Vector4 accent)
     {
         var selected = ChocoboData.Colors[index];
         var changed = false;
@@ -231,7 +248,7 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.SameLine();
         ImGui.TextColored(TextMuted, $"RGB  {selected.Rgb.R}  /  {selected.Rgb.G}  /  {selected.Rgb.B}");
         ImGui.SetNextItemWidth(-1);
-        if (DrawColorCombo(comboId, ref index))
+        if (DrawColorCombo(comboId, ref index, ref searchText))
             changed = true;
         ImGui.EndGroup();
         EndGlassPanel();
@@ -552,16 +569,33 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.TextColored(TextMuted, $"{rgb.R}/{rgb.G}/{rgb.B}");
     }
 
-    private bool DrawColorCombo(string id, ref int index)
+    private bool DrawColorCombo(string id, ref int index, ref string searchText)
     {
         var changed = false;
         var selected = ChocoboData.Colors[index];
         if (!ImGui.BeginCombo(id, $"{selected.Name}##{selected.Name}"))
             return false;
 
+        var popupAppearing = ImGui.IsWindowAppearing();
+        if (popupAppearing)
+        {
+            searchText = string.Empty;
+            ImGui.SetKeyboardFocusHere();
+        }
+
+        ImGui.SetNextItemWidth(-1);
+        ImGui.InputTextWithHint($"##colorSearch{id}", "Search color names...", ref searchText, 64);
+        ImGui.Separator();
+
+        var matches = 0;
         for (var i = 0; i < ChocoboData.Colors.Count; i++)
         {
             var color = ChocoboData.Colors[i];
+            if (!string.IsNullOrWhiteSpace(searchText) &&
+                !color.Name.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            matches++;
             ImGui.PushID(i);
             DrawSmallSwatch(color.Rgb, "combo");
             ImGui.SameLine();
@@ -570,10 +604,14 @@ public sealed class MainWindow : Window, IDisposable
                 index = i;
                 changed = true;
             }
-            if (i == index)
+            if (i == index && string.IsNullOrWhiteSpace(searchText))
                 ImGui.SetItemDefaultFocus();
             ImGui.PopID();
         }
+
+        if (matches == 0)
+            ImGui.TextColored(TextMuted, "No matching plumage colors.");
+
         ImGui.EndCombo();
         return changed;
     }
