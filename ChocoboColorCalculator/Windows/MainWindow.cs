@@ -517,7 +517,7 @@ public sealed class MainWindow : Window, IDisposable
         BeginGlassPanel("##exportPanel", new Vector2(0, 102 * ImGuiHelpers.GlobalScale), Glass, AccentCoral, AccentViolet);
         ImGui.TextColored(AccentCoral, "EXPORT ROUTE");
         ImGui.SameLine();
-        ImGui.TextColored(TextMuted, "Create a complete visual guide with every step, RGB result, status, shopping list, and instructions.");
+        ImGui.TextColored(TextMuted, "Create a complete visual guide with every step, RGB result, shopping list, and instructions.");
         ImGui.Dummy(new Vector2(1, 3) * ImGuiHelpers.GlobalScale);
 
         if (ImGui.BeginTable("##exportActions", 4, ImGuiTableFlags.SizingStretchSame))

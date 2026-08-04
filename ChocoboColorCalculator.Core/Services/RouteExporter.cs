@@ -68,7 +68,7 @@ public static class RouteExporter
         builder.AppendLine(new string('=', 72));
         builder.AppendLine($"Route:      {document.StartName} -> {document.TargetName}");
         builder.AppendLine($"Calculated: {document.CalculatedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm}");
-        builder.AppendLine($"Progress:   {document.CompletedCount} / {document.Steps.Count} steps complete");
+        builder.AppendLine($"Total feeds: {document.Steps.Count}");
         builder.AppendLine();
         builder.AppendLine("ROUTE OVERVIEW");
         builder.AppendLine($"  Starting color:   {document.StartName} ({RgbText(document.StartRgb)})");
@@ -90,14 +90,14 @@ public static class RouteExporter
         builder.AppendLine();
         builder.AppendLine("ORDERED FEEDING ROUTE");
         builder.AppendLine(new string('-', 72));
-        builder.AppendLine($"{"STEP",-6}{"FRUIT",-24}{"RGB AFTER",-16}{"STATUS",-18}EFFECT");
+        builder.AppendLine($"{"STEP",-6}{"FRUIT",-26}{"RGB AFTER",-16}EFFECT");
         builder.AppendLine(new string('-', 72));
         foreach (var step in document.Steps)
         {
             var fruit = ChocoboData.Fruit(step.Fruit);
             builder.AppendLine(
-                $"{step.Number,-6}{Truncate(step.FruitName, 22),-24}{RgbChannels(step.RgbAfter),-16}" +
-                $"{StepStatus(document, step),-18}{EffectText(fruit.Delta)}");
+                $"{step.Number,-6}{Truncate(step.FruitName, 24),-26}{RgbChannels(step.RgbAfter),-16}" +
+                EffectText(fruit.Delta));
         }
         if (document.Steps.Count == 0)
             builder.AppendLine("No fruit is required because the starting and desired colors match.");
@@ -128,7 +128,7 @@ public static class RouteExporter
         builder.AppendLine("section{margin-top:22px;padding:25px;border:1px solid #52618455;border-radius:18px;background:#151c2dcc;box-shadow:0 12px 35px #0003}h2{margin:0 0 16px;font-size:17px;letter-spacing:.08em}");
         builder.AppendLine(".grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{padding:17px;border-radius:14px;background:#202a40}.label{color:#8fa1c4;font-size:11px;font-weight:800;letter-spacing:.09em}.value{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:18px;font-weight:750}.swatch{width:28px;height:28px;border-radius:8px;border:2px solid #fff5;box-shadow:0 5px 12px #0006}");
         builder.AppendLine(".shopping{display:flex;gap:10px;flex-wrap:wrap}.fruit{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:999px;background:#222c43}.dot{width:12px;height:12px;border-radius:50%}.count{color:#ffc45d;font-weight:800}");
-        builder.AppendLine("ol{padding-left:24px;margin-bottom:0}li{padding:3px 0}table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:12px}th{position:sticky;top:0;background:#242f49;color:#aebfe2;text-align:left;font-size:11px;letter-spacing:.08em}th,td{padding:10px 12px;border-bottom:1px solid #52618433}tr:last-child td{border:0}tbody tr:nth-child(even){background:#1a2337}.next{background:#4b371b!important}.done{color:#72e5aa}.auto{color:#68b8ff}.queued{color:#93a0b7}.rgb{display:inline-flex;align-items:center;gap:8px}.tiny{width:16px;height:16px;border-radius:5px;border:1px solid #fff4}");
+        builder.AppendLine("ol{padding-left:24px;margin-bottom:0}li{padding:3px 0}table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:12px}th{position:sticky;top:0;background:#242f49;color:#aebfe2;text-align:left;font-size:11px;letter-spacing:.08em}th,td{padding:10px 12px;border-bottom:1px solid #52618433}tr:last-child td{border:0}tbody tr:nth-child(even){background:#1a2337}.rgb{display:inline-flex;align-items:center;gap:8px}.tiny{width:16px;height:16px;border-radius:5px;border:1px solid #fff4}");
         builder.AppendLine(".note{border-left:4px solid #ffc45d}.footer{text-align:center;color:#7584a3;margin-top:22px}@media(max-width:720px){.grid{grid-template-columns:1fr}.hero{padding:25px}section{padding:18px}.table-wrap{overflow:auto}th,td{white-space:nowrap}}");
         builder.AppendLine("@media print{body{background:#fff;color:#172033}main{max-width:none;padding:0}.hero,section{box-shadow:none;break-inside:avoid}.hero{color:#fff}.table-wrap{overflow:visible}thead{display:table-header-group}tr{break-inside:avoid}.footer{color:#555}}");
         builder.AppendLine("</style></head><body><main>");
@@ -139,7 +139,7 @@ public static class RouteExporter
         builder.AppendLine("<section><h2>ROUTE OVERVIEW</h2><div class=\"grid\">");
         AppendHtmlColorCard(builder, "STARTING COLOR", document.StartName, document.StartRgb);
         AppendHtmlColorCard(builder, "DESIRED COLOR", document.TargetName, document.TargetRgb);
-        builder.AppendLine($"<div class=\"card\"><div class=\"label\">PROGRESS</div><div class=\"value\">{document.CompletedCount} / {document.Steps.Count}</div><div>{Html(document.PredictedColorName)} predicted &middot; margin {document.ClassificationMargin:F2}</div></div>");
+        builder.AppendLine($"<div class=\"card\"><div class=\"label\">TOTAL FEEDS</div><div class=\"value\">{document.Steps.Count}</div><div>{Html(document.PredictedColorName)} predicted &middot; margin {document.ClassificationMargin:F2}</div></div>");
         builder.AppendLine("</div></section>");
 
         builder.AppendLine("<section><h2>SHOPPING LIST</h2><div class=\"shopping\">");
@@ -164,24 +164,15 @@ public static class RouteExporter
         builder.AppendLine("</ol></section>");
 
         builder.AppendLine("<section><h2>ORDERED FEEDING ROUTE</h2><div class=\"table-wrap\"><table><thead><tr>");
-        builder.AppendLine("<th>STEP</th><th>FRUIT</th><th>EFFECT</th><th>RGB AFTER</th><th>STATUS</th></tr></thead><tbody>");
+        builder.AppendLine("<th>STEP</th><th>FRUIT</th><th>EFFECT</th><th>RGB AFTER</th></tr></thead><tbody>");
         foreach (var step in document.Steps)
         {
-            var status = StepStatus(document, step);
-            var statusClass = step.Number == document.NextStepNumber ? "next" : string.Empty;
-            var textClass = step.Completion switch
-            {
-                RouteStepCompletion.Automatic or RouteStepCompletion.ManualAndAutomatic => "auto",
-                RouteStepCompletion.Manual => "done",
-                _ => "queued",
-            };
-            builder.AppendLine($"<tr class=\"{statusClass}\"><td>{step.Number:00}</td><td><span class=\"rgb\"><span class=\"dot\" style=\"background:{FruitHex(step.Fruit)}\"></span>{Html(step.FruitName)}</span></td>" +
+            builder.AppendLine($"<tr><td>{step.Number:00}</td><td><span class=\"rgb\"><span class=\"dot\" style=\"background:{FruitHex(step.Fruit)}\"></span>{Html(step.FruitName)}</span></td>" +
                                $"<td>{Html(EffectText(ChocoboData.Fruit(step.Fruit).Delta))}</td>" +
-                               $"<td><span class=\"rgb\"><span class=\"tiny\" style=\"background:{step.RgbAfter.Hex}\"></span>{Html(RgbText(step.RgbAfter))}</span></td>" +
-                               $"<td class=\"{textClass}\">{Html(status)}</td></tr>");
+                               $"<td><span class=\"rgb\"><span class=\"tiny\" style=\"background:{step.RgbAfter.Hex}\"></span>{Html(RgbText(step.RgbAfter))}</span></td></tr>");
         }
         if (document.Steps.Count == 0)
-            builder.AppendLine("<tr><td colspan=\"5\">No fruit is required because the starting and desired colors match.</td></tr>");
+            builder.AppendLine("<tr><td colspan=\"4\">No fruit is required because the starting and desired colors match.</td></tr>");
         builder.AppendLine("</tbody></table></div></section>");
 
         builder.AppendLine("<section class=\"note\"><h2>IMPORTANT</h2><p>The feather-growth message only means the pending color crossed a named-color boundary. Its absence does not mean a fruit failed. Follow only the ordered list above.</p>");
@@ -216,7 +207,7 @@ public static class RouteExporter
         page.Text("ROUTE OVERVIEW", 40, 133, 12, true, Violet);
         DrawColorCard(page, 40, 153, 162, "STARTING COLOR", document.StartName, document.StartRgb, Blue);
         DrawColorCard(page, 216, 153, 162, "DESIRED COLOR", document.TargetName, document.TargetRgb, Violet);
-        DrawProgressCard(page, 392, 153, 163, document);
+        DrawRouteSummaryCard(page, 392, 153, 163, document);
 
         page.Text("SHOPPING LIST", 40, 260, 12, true, Violet);
         var groups = document.Steps.GroupBy(step => step.Fruit).ToList();
@@ -275,7 +266,7 @@ public static class RouteExporter
         else
         {
             page.Text("DOCUMENT GUIDE", 55, 733, 9, true, Violet);
-            page.Text("The following pages contain every numbered fruit, its RGB result, and saved completion status.", 55, 752, 9, false, Muted);
+            page.Text("The following pages contain every numbered fruit, its channel effect, and resulting RGB value.", 55, 752, 9, false, Muted);
         }
         DrawPdfFooter(page, 1, 1 + Math.Max(1, (int)Math.Ceiling(document.Steps.Count / 25d)));
         return page;
@@ -291,14 +282,13 @@ public static class RouteExporter
         page.Text(rangeText, 40, 52, 9, false, new PdfColor(0.70, 0.79, 0.94));
         page.Text($"{document.StartName} -> {document.TargetName}", 390, 37, 9, true, Gold);
 
-        var columns = new[] { 40d, 82d, 101d, 258d, 350d, 455d };
+        var columns = new[] { 40d, 86d, 106d, 315d, 415d };
         page.FillRect(40, 98, 515, 28, new PdfColor(0.13, 0.17, 0.27));
         page.Text("STEP", columns[0] + 7, 107, 8, true, White);
         page.Text("", columns[1], 107, 8, true, White);
         page.Text("FRUIT", columns[2], 107, 8, true, White);
         page.Text("EFFECT", columns[3], 107, 8, true, White);
         page.Text("RGB AFTER", columns[4], 107, 8, true, White);
-        page.Text("STATUS", columns[5], 107, 8, true, White);
 
         if (count == 0)
         {
@@ -311,27 +301,14 @@ public static class RouteExporter
         {
             var step = document.Steps[offset + row];
             var top = 126 + row * rowHeight;
-            var isNext = step.Number == document.NextStepNumber;
-            var background = isNext
-                ? new PdfColor(1.0, 0.95, 0.80)
-                : row % 2 == 0 ? White : Pale;
+            var background = row % 2 == 0 ? White : Pale;
             page.FillRect(40, top, 515, rowHeight, background);
-            if (isNext)
-                page.FillRect(40, top, 4, rowHeight, Gold);
-            page.Text(step.Number.ToString("00", CultureInfo.InvariantCulture), columns[0] + 8, top + 8, 8.5, true, isNext ? Gold : Ink);
+            page.Text(step.Number.ToString("00", CultureInfo.InvariantCulture), columns[0] + 8, top + 8, 8.5, true, Ink);
             page.FillRect(columns[1], top + 7, 10, 10, FruitColor(step.Fruit));
             page.Text(FitText(PdfFruitName(step), 25), columns[2], top + 8, 8.2, false, Ink);
             page.Text(EffectText(ChocoboData.Fruit(step.Fruit).Delta), columns[3], top + 8, 8.2, false, Muted);
             page.FillRect(columns[4], top + 7, 10, 10, RgbColor(step.RgbAfter));
             page.Text($"{step.RgbAfter.R}/{step.RgbAfter.G}/{step.RgbAfter.B}", columns[4] + 16, top + 8, 8.2, false, Ink);
-            var statusColor = step.Completion switch
-            {
-                RouteStepCompletion.Automatic or RouteStepCompletion.ManualAndAutomatic => Blue,
-                RouteStepCompletion.Manual => Green,
-                _ when isNext => Gold,
-                _ => Muted,
-            };
-            page.Text(StepStatus(document, step), columns[5], top + 8, 7.8, true, statusColor);
         }
 
         var pageNumber = 2 + offset / 25;
@@ -358,12 +335,12 @@ public static class RouteExporter
         page.Text(RgbText(rgb), x + 49, top + 54, 8, false, Muted);
     }
 
-    private static void DrawProgressCard(PdfPageBuilder page, double x, double top, double width, RouteExportDocument document)
+    private static void DrawRouteSummaryCard(PdfPageBuilder page, double x, double top, double width, RouteExportDocument document)
     {
         page.FillRect(x, top, width, 78, Pale);
         page.FillRect(x, top, width, 4, Green);
-        page.Text("ROUTE PROGRESS", x + 14, top + 17, 7.5, true, Muted);
-        page.Text($"{document.CompletedCount} / {document.Steps.Count}", x + 14, top + 36, 16, true, Ink);
+        page.Text("TOTAL FEEDS", x + 14, top + 17, 7.5, true, Muted);
+        page.Text(document.Steps.Count.ToString(CultureInfo.InvariantCulture), x + 14, top + 36, 16, true, Ink);
         page.Text(FitText($"{document.PredictedColorName} predicted", 27), x + 14, top + 58, 8, false, Green);
     }
 
@@ -434,15 +411,6 @@ public static class RouteExporter
 
     private static void AppendHtmlColorCard(StringBuilder builder, string label, string name, RgbColor rgb) =>
         builder.AppendLine($"<div class=\"card\"><div class=\"label\">{Html(label)}</div><div class=\"value\"><span class=\"swatch\" style=\"background:{rgb.Hex}\"></span>{Html(name)}</div><div>{Html(RgbText(rgb))}</div></div>");
-
-    private static string StepStatus(RouteExportDocument document, RouteExportStep step) => step.Completion switch
-    {
-        RouteStepCompletion.ManualAndAutomatic => "AUTO + MANUAL",
-        RouteStepCompletion.Automatic => "AUTO-DETECTED",
-        RouteStepCompletion.Manual => "MANUAL",
-        _ when step.Number == document.NextStepNumber => "NEXT",
-        _ => "QUEUED",
-    };
 
     private static string EffectText(RgbColor delta) =>
         $"R{Signed(delta.R)} G{Signed(delta.G)} B{Signed(delta.B)}";

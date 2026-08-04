@@ -99,13 +99,7 @@ for (var index = 0; index < desertToSoot.Steps.Count; index++)
 {
     var kind = desertToSoot.Steps[index];
     exportRgb = ChocoboData.Fruit(kind).Apply(exportRgb);
-    var completion = index switch
-    {
-        0 => RouteStepCompletion.Manual,
-        1 => RouteStepCompletion.Automatic,
-        _ => RouteStepCompletion.Pending,
-    };
-    exportSteps.Add(new RouteExportStep(index + 1, kind, ChocoboData.Fruit(kind).Name, exportRgb, completion));
+    exportSteps.Add(new RouteExportStep(index + 1, kind, ChocoboData.Fruit(kind).Name, exportRgb));
 }
 var exportDocument = new RouteExportDocument(
     desert.Name,
@@ -125,10 +119,16 @@ var pdfExport = RouteExporter.CreatePdf(exportDocument);
 var pdfText = Encoding.ASCII.GetString(pdfExport);
 Require(textExport.Contains("HOW TO USE THIS ROUTE", StringComparison.Ordinal), "Text export is missing instructions.");
 Require(textExport.Contains("74    ", StringComparison.Ordinal), "Text export is missing the final route step.");
+Require(!textExport.Contains("STATUS", StringComparison.Ordinal), "Text export must not contain a static status column.");
+Require(!textExport.Contains("AUTO-DETECTED", StringComparison.Ordinal), "Text export must not contain saved step statuses.");
 Require(htmlExport.Contains("<table>", StringComparison.Ordinal), "HTML export is missing the route table.");
-Require(htmlExport.Contains("AUTO-DETECTED", StringComparison.Ordinal), "HTML export is missing saved step status.");
+Require(!htmlExport.Contains("<th>STATUS</th>", StringComparison.Ordinal), "HTML export must not contain a static status column.");
+Require(!htmlExport.Contains("AUTO-DETECTED", StringComparison.Ordinal), "HTML export must not contain saved step statuses.");
 Require(pdfText.StartsWith("%PDF-1.4", StringComparison.Ordinal), "PDF export has an invalid header.");
 Require(pdfText.Contains("/Count 4", StringComparison.Ordinal), "PDF export has an unexpected page count.");
+Require(pdfText.Contains("(TOTAL FEEDS)", StringComparison.Ordinal), "PDF export is missing its route summary.");
+Require(!pdfText.Contains("(STATUS)", StringComparison.Ordinal), "PDF export must not contain a static status column.");
+Require(!pdfText.Contains("(AUTO-DETECTED)", StringComparison.Ordinal), "PDF export must not contain saved step statuses.");
 Require(pdfText.EndsWith("%%EOF\n", StringComparison.Ordinal), "PDF export is missing its end marker.");
 
 if (args.Length == 1)

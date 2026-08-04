@@ -176,14 +176,7 @@ public sealed class Plugin : IDalamudPlugin
             var tracked = plan.Steps[index];
             var fruit = (FruitKind)tracked.FruitKind;
             rgb = ChocoboData.Fruit(fruit).Apply(rgb);
-            var completion = (tracked.ManualCompleted, tracked.AutoCompleted) switch
-            {
-                (true, true) => RouteStepCompletion.ManualAndAutomatic,
-                (true, false) => RouteStepCompletion.Manual,
-                (false, true) => RouteStepCompletion.Automatic,
-                _ => RouteStepCompletion.Pending,
-            };
-            steps.Add(new RouteExportStep(index + 1, fruit, LocalizedFruitName(fruit), rgb, completion));
+            steps.Add(new RouteExportStep(index + 1, fruit, LocalizedFruitName(fruit), rgb));
         }
 
         var document = new RouteExportDocument(

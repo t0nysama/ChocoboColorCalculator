@@ -3,18 +3,18 @@
     "Author": "Null",
     "Name": "Chocobo Color Calculator",
     "InternalName": "ChocoboColorCalculator",
-    "AssemblyVersion": "0.6.0.0",
+    "AssemblyVersion": "0.6.1.0",
     "RepoUrl": "https://github.com/t0nysama/ChocoboColorCalculator",
     "IconUrl": "https://raw.githubusercontent.com/t0nysama/ChocoboColorCalculator/79e26fa213c3934ec5d9246cbffc6fdb14423809/images/icon.png",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 15,
     "Punchline": "Plan and track an accurate chocobo color feeding route in game.",
     "Description": "Calculates and tracks ordered fruit routes between companion chocobo colors.",
-    "Changelog": "Added one-click PDF, plain-text, and responsive HTML route exports. Every format includes the route overview, fruit shopping list, clear feeding instructions, all ordered steps, RGB progression, saved completion status, and route-specific accuracy guidance, with quick access to the export folder.",
+    "Changelog": "Refined PDF, text, and HTML exports as clean static route guides by removing saved status labels, progress snapshots, and current-step highlighting. Every exported checklist now focuses only on step order, fruit, channel effect, and resulting RGB values; live progress tracking remains inside the plugin.",
     "IsHide": false,
     "IsTestingExclusive": false,
     "DownloadLinkInstall": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
     "DownloadLinkUpdate": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
-    "LastUpdate": "1785817732"
+    "LastUpdate": "1785818290"
   }
 ]
