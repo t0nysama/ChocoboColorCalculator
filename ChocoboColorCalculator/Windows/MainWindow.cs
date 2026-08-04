@@ -1,6 +1,7 @@
 using System.Numerics;
 using ChocoboColorCalculator.Core.Data;
 using ChocoboColorCalculator.Core.Models;
+using ChocoboColorCalculator.Core.Services;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility;
@@ -34,6 +35,8 @@ public sealed class MainWindow : Window, IDisposable
     private bool showGuide;
     private string currentColorSearch = string.Empty;
     private string targetColorSearch = string.Empty;
+    private string? exportNotice;
+    private bool exportNoticeIsError;
 
     public MainWindow(Plugin plugin)
         : base("Chocobo Color Calculator##Main")
@@ -180,6 +183,8 @@ public sealed class MainWindow : Window, IDisposable
         DrawNextStep(plan, deltaTime);
         ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
         DrawTrackingOptions(plan, deltaTime);
+        ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
+        DrawExportPanel(deltaTime);
         ImGui.Dummy(new Vector2(1, 8) * ImGuiHelpers.GlobalScale);
         DrawStepTable(plan);
     }
@@ -505,6 +510,85 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.EndTable();
         }
         EndGlassPanel();
+    }
+
+    private void DrawExportPanel(float deltaTime)
+    {
+        BeginGlassPanel("##exportPanel", new Vector2(0, 102 * ImGuiHelpers.GlobalScale), Glass, AccentCoral, AccentViolet);
+        ImGui.TextColored(AccentCoral, "EXPORT ROUTE");
+        ImGui.SameLine();
+        ImGui.TextColored(TextMuted, "Create a complete visual guide with every step, RGB result, status, shopping list, and instructions.");
+        ImGui.Dummy(new Vector2(1, 3) * ImGuiHelpers.GlobalScale);
+
+        if (ImGui.BeginTable("##exportActions", 4, ImGuiTableFlags.SizingStretchSame))
+        {
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            if (CompactButton("PDF DOCUMENT##exportPdf", new Vector2(ImGui.GetContentRegionAvail().X, 32 * ImGuiHelpers.GlobalScale), AccentCoral, deltaTime))
+                TryExport(RouteExportFormat.Pdf);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("A polished, paginated document designed for printing or sharing.");
+
+            ImGui.TableNextColumn();
+            if (CompactButton("TEXT CHECKLIST##exportText", new Vector2(ImGui.GetContentRegionAvail().X, 32 * ImGuiHelpers.GlobalScale), AccentBlue, deltaTime))
+                TryExport(RouteExportFormat.Text);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("A lightweight plain-text route that opens anywhere.");
+
+            ImGui.TableNextColumn();
+            if (CompactButton("HTML GUIDE##exportHtml", new Vector2(ImGui.GetContentRegionAvail().X, 32 * ImGuiHelpers.GlobalScale), AccentViolet, deltaTime))
+                TryExport(RouteExportFormat.Html);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("A responsive visual guide for any web browser.");
+
+            ImGui.TableNextColumn();
+            if (CompactButton("OPEN EXPORT FOLDER##openExports", new Vector2(ImGui.GetContentRegionAvail().X, 32 * ImGuiHelpers.GlobalScale), AccentGold, deltaTime))
+                TryOpenExportFolder();
+            ImGui.EndTable();
+        }
+        EndGlassPanel();
+
+        if (!string.IsNullOrWhiteSpace(exportNotice))
+        {
+            ImGui.Dummy(new Vector2(1, 4) * ImGuiHelpers.GlobalScale);
+            DrawNotice(
+                exportNoticeIsError ? "EXPORT FAILED" : "EXPORT READY",
+                exportNotice,
+                exportNoticeIsError ? Danger : Success,
+                exportNoticeIsError ? GoldGlass : GreenGlass);
+        }
+    }
+
+    private void TryExport(RouteExportFormat format)
+    {
+        try
+        {
+            var path = plugin.ExportActiveRoute(format);
+            exportNotice = $"{format.ToString().ToUpperInvariant()} saved as {Path.GetFileName(path)} in {plugin.RouteExportDirectory}";
+            exportNoticeIsError = false;
+        }
+        catch (Exception exception)
+        {
+            Plugin.Log.Error(exception, "Failed to export the active chocobo route.");
+            exportNotice = $"The route could not be exported: {exception.Message}";
+            exportNoticeIsError = true;
+        }
+    }
+
+    private void TryOpenExportFolder()
+    {
+        try
+        {
+            plugin.OpenRouteExportDirectory();
+            exportNotice = $"Export folder opened: {plugin.RouteExportDirectory}";
+            exportNoticeIsError = false;
+        }
+        catch (Exception exception)
+        {
+            Plugin.Log.Error(exception, "Failed to open the chocobo route export folder.");
+            exportNotice = $"The export folder could not be opened: {exception.Message}";
+            exportNoticeIsError = true;
+        }
     }
 
     private void DrawRouteRow(TrackedStepState step, FruitKind fruit, int index, int next, RgbColor rgb)

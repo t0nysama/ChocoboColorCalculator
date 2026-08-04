@@ -34,6 +34,7 @@ This is a third-party custom-repository plugin and is not part of Dalamud's offi
 - Independent manual and automatic checkboxes for every step.
 - Automatic progress from FFXIV's structured, client-localized chocobo-snack log message, with a rendered-chat fallback; unexpected fruit is detected and does not silently advance the route.
 - Persistent route and progress across plugin/game restarts, undo, reset, and optional next-step chat reminders.
+- One-click PDF, plain-text, and responsive HTML exports saved under `Documents\Chocobo Color Calculator\Exports`, including a visual route overview, shopping list, usage instructions, every ordered step, RGB progression, and saved manual/automatic completion status.
 
 ## Accuracy and the unavoidable limitation
 

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ChocoboColorCalculator.Core.Data;
 using ChocoboColorCalculator.Core.Models;
 using ChocoboColorCalculator.Core.Services;
@@ -157,6 +158,60 @@ public sealed class Plugin : IDalamudPlugin
         localizedFruitNames.GetValueOrDefault(kind, ChocoboData.Fruit(kind).Name);
 
     internal uint FruitIconId(FruitKind kind) => fruitIconIds.GetValueOrDefault(kind);
+
+    internal string RouteExportDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        "Chocobo Color Calculator",
+        "Exports");
+
+    internal string ExportActiveRoute(RouteExportFormat format)
+    {
+        var plan = Configuration.ActivePlan ?? throw new InvalidOperationException("Calculate a route before exporting it.");
+        var targetRgb = ChocoboData.Colors.FirstOrDefault(color => color.Name == plan.TargetName)?.Rgb ??
+                        new RgbColor(plan.EndR, plan.EndG, plan.EndB);
+        var rgb = new RgbColor(plan.StartR, plan.StartG, plan.StartB);
+        var steps = new List<RouteExportStep>(plan.Steps.Count);
+        for (var index = 0; index < plan.Steps.Count; index++)
+        {
+            var tracked = plan.Steps[index];
+            var fruit = (FruitKind)tracked.FruitKind;
+            rgb = ChocoboData.Fruit(fruit).Apply(rgb);
+            var completion = (tracked.ManualCompleted, tracked.AutoCompleted) switch
+            {
+                (true, true) => RouteStepCompletion.ManualAndAutomatic,
+                (true, false) => RouteStepCompletion.Manual,
+                (false, true) => RouteStepCompletion.Automatic,
+                _ => RouteStepCompletion.Pending,
+            };
+            steps.Add(new RouteExportStep(index + 1, fruit, LocalizedFruitName(fruit), rgb, completion));
+        }
+
+        var document = new RouteExportDocument(
+            plan.StartName,
+            new RgbColor(plan.StartR, plan.StartG, plan.StartB),
+            plan.TargetName,
+            targetRgb,
+            plan.PredictedColorName,
+            new RgbColor(plan.AimR, plan.AimG, plan.AimB),
+            new RgbColor(plan.EndR, plan.EndG, plan.EndB),
+            plan.ClassificationMargin,
+            plan.CreatedAtUtc,
+            steps,
+            plan.Warning);
+        var path = RouteExporter.Export(document, format, RouteExportDirectory);
+        ChatGui.Print($"Route exported to {path}", "Chocobo Color");
+        return path;
+    }
+
+    internal void OpenRouteExportDirectory()
+    {
+        Directory.CreateDirectory(RouteExportDirectory);
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = RouteExportDirectory,
+            UseShellExecute = true,
+        });
+    }
 
     private void OnCommand(string command, string arguments) => mainWindow.Toggle();
     private void ToggleMainUi() => mainWindow.Toggle();
