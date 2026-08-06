@@ -24,13 +24,13 @@ This is a third-party custom-repository plugin and is not part of Dalamud's offi
 
 ## Standalone Windows desktop app
 
-Prefer a normal Windows program? Download the self-contained desktop edition from the [latest desktop release](https://github.com/t0nysama/ChocoboColorCalculator/releases/tag/desktop-v1.0.0).
+Prefer a normal Windows program? Download the self-contained desktop edition from the [latest desktop release](https://github.com/t0nysama/ChocoboColorCalculator/releases/tag/desktop-v1.0.1).
 
 1. Download `ChocoboColorCalculator-Desktop-win-x64.zip`.
 2. Extract the ZIP file to a folder of your choice.
 3. Run `ChocoboColorCalculator.Desktop.exe`.
 
-The desktop application does not require XIVLauncher, Dalamud, or a separate .NET installation. It shares the same verified calculation and export engine as the plugin and includes searchable colors, shopping totals, next-feed guidance, the complete ordered route, manual progress tracking, persistent state, PDF/Text/HTML exports, and the built-in guide.
+The desktop application does not require XIVLauncher, Dalamud, or a separate .NET installation. It shares the same verified calculation and export engine as the plugin and includes searchable colors, shopping totals, next-feed guidance, the complete ordered route, manual progress tracking, persistent state, PDF/Text/HTML exports, and the built-in guide. On each launch it performs one asynchronous check of the project's public GitHub releases and displays a download banner if a newer `desktop-v*` release exists; offline or failed checks are ignored without delaying the application.
 
 Automatic feed detection is exclusive to the in-game Dalamud plugin because it depends on FFXIV's structured chat events. The desktop edition clearly uses manual tracking instead. The executable is currently unsigned, so Windows SmartScreen may ask you to confirm that you want to run it.
 

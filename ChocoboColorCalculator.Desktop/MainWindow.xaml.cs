@@ -17,6 +17,9 @@ public partial class MainWindow : Window
     private readonly RouteCalculator calculator = new();
     private readonly List<ColorOption> allColors;
     private readonly DesktopState state;
+    private readonly DesktopUpdateService updateService = new();
+    private readonly CancellationTokenSource updateCheckCancellation = new();
+    private DesktopUpdate? availableUpdate;
     private bool isInitializing = true;
 
     public ObservableCollection<RouteStepItem> RouteSteps { get; } = [];
@@ -40,6 +43,13 @@ public partial class MainWindow : Window
         RebuildActiveRoute();
         isInitializing = false;
         Closing += (_, _) => SaveState();
+        ContentRendered += MainWindow_ContentRendered;
+        Closed += (_, _) =>
+        {
+            updateCheckCancellation.Cancel();
+            updateCheckCancellation.Dispose();
+            updateService.Dispose();
+        };
     }
 
     private string ExportDirectory => Path.Combine(
@@ -335,6 +345,39 @@ public partial class MainWindow : Window
             SetStatus($"Could not open export folder: {exception.Message}", true);
         }
     }
+
+    private async void MainWindow_ContentRendered(object? sender, EventArgs e)
+    {
+        ContentRendered -= MainWindow_ContentRendered;
+        await Task.Yield();
+
+        var currentVersion = GetType().Assembly.GetName().Version ?? new Version(1, 0, 1, 0);
+        availableUpdate = await updateService.CheckAsync(currentVersion, updateCheckCancellation.Token);
+        if (availableUpdate is null || !IsLoaded)
+            return;
+
+        UpdateMessageText.Text = $"Desktop {availableUpdate.Version} is ready. You are using {currentVersion.ToString(3)}.";
+        UpdateBanner.Visibility = Visibility.Visible;
+    }
+
+    private void DownloadUpdateButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (availableUpdate is null)
+            return;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = availableUpdate.DownloadUrl, UseShellExecute = true });
+            SetStatus($"Opened the download for desktop {availableUpdate.Version}.", false);
+        }
+        catch (Exception exception)
+        {
+            SetStatus($"Could not open the update download: {exception.Message}", true);
+        }
+    }
+
+    private void DismissUpdateButton_Click(object sender, RoutedEventArgs e) =>
+        UpdateBanner.Visibility = Visibility.Collapsed;
 
     private void SaveState()
     {

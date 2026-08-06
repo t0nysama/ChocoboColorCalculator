@@ -15,6 +15,8 @@ FEATURES
 - Searchable current and desired color selectors.
 - Shopping list, next-feed guidance, and a complete RGB route table.
 - Manual checkboxes, Confirm Next, Undo, Reset, and saved progress.
+- A lightweight update check on launch with a download notification when a
+  newer desktop release is available.
 - PDF, plain-text, and responsive HTML exports.
 - A built-in feeding and accuracy guide.
 
@@ -31,7 +33,8 @@ Route exports:
   %USERPROFILE%\Documents\Chocobo Color Calculator\Exports
 
 The application does not require an account and does not send route or progress
-data anywhere.
+data anywhere. Its only network request checks this project's public GitHub
+releases once when the application launches.
 
 PROJECT
 https://github.com/t0nysama/ChocoboColorCalculator

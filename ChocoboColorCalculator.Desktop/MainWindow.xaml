@@ -216,6 +216,7 @@
         <Grid Margin="24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="116" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="34" />
             </Grid.RowDefinitions>
@@ -245,7 +246,34 @@
                 </Grid>
             </Border>
 
-            <TabControl Grid.Row="1" x:Name="MainTabs">
+            <Border Grid.Row="1" x:Name="UpdateBanner" Visibility="Collapsed" CornerRadius="13" BorderBrush="#6F62D8" BorderThickness="1" Padding="16,13" Margin="0,0,0,12">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#E72A234B" Offset="0" />
+                        <GradientStop Color="#E0163552" Offset="1" />
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="44" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="34" Height="34" CornerRadius="17" Background="#7749D8" VerticalAlignment="Center">
+                        <TextBlock Text="&#x21BB;" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="DESKTOP UPDATE AVAILABLE" Foreground="{StaticResource GreenBrush}" FontSize="11" FontWeight="Bold" />
+                        <TextBlock x:Name="UpdateMessageText" Text="A newer desktop release is ready." FontSize="14" FontWeight="SemiBold" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="DOWNLOAD UPDATE" Style="{StaticResource PrimaryButton}" Click="DownloadUpdateButton_Click" Margin="0,0,8,0" />
+                        <Button Content="NOT NOW" Style="{StaticResource SecondaryButton}" Click="DismissUpdateButton_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <TabControl Grid.Row="2" x:Name="MainTabs">
                 <TabItem Header="CALCULATOR">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,14,8,0">
                         <StackPanel>
@@ -429,7 +457,7 @@
                 </TabItem>
             </TabControl>
 
-            <Grid Grid.Row="2" Margin="4,6,4,0">
+            <Grid Grid.Row="3" Margin="4,6,4,0">
                 <TextBlock x:Name="StatusText" Text="Ready." Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
                 <TextBlock Text="Desktop edition · manual tracking" Foreground="#60708F" HorizontalAlignment="Right" VerticalAlignment="Center" />
             </Grid>
