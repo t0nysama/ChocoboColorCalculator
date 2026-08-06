@@ -470,7 +470,7 @@ public sealed class MainWindow : Window, IDisposable
         }
         ImGui.Dummy(new Vector2(1, 5) * ImGuiHelpers.GlobalScale);
 
-        if (ImGui.BeginTable("##routeSteps", 7,
+        if (ImGui.BeginTable("##routeSteps", 8,
                 ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY |
                 ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.PadOuterX,
                 new Vector2(0, -1)))
@@ -482,6 +482,7 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.TableSetupColumn("STATUS", ImGuiTableColumnFlags.WidthFixed, 108 * ImGuiHelpers.GlobalScale);
             ImGui.TableSetupColumn("MANUAL", ImGuiTableColumnFlags.WidthFixed, 70 * ImGuiHelpers.GlobalScale);
             ImGui.TableSetupColumn("AUTO", ImGuiTableColumnFlags.WidthFixed, 58 * ImGuiHelpers.GlobalScale);
+            ImGui.TableSetupColumn("PREVIEW", ImGuiTableColumnFlags.WidthFixed, 76 * ImGuiHelpers.GlobalScale);
             ImGui.TableSetupColumn("RGB AFTER", ImGuiTableColumnFlags.WidthFixed, 106 * ImGuiHelpers.GlobalScale);
             ImGui.TableHeadersRow();
 
@@ -649,8 +650,50 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.EndDisabled();
 
         ImGui.TableNextColumn();
+        DrawRouteColorPreview(rgb, index);
+
+        ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
         ImGui.TextColored(TextMuted, $"{rgb.R}/{rgb.G}/{rgb.B}");
+    }
+
+    private static void DrawRouteColorPreview(RgbColor rgb, int index)
+    {
+        var scale = ImGuiHelpers.GlobalScale;
+        var size = new Vector2(38, 22) * scale;
+        var available = ImGui.GetContentRegionAvail().X;
+        if (available > size.X)
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (available - size.X) * 0.5f);
+
+        var min = ImGui.GetCursorScreenPos();
+        var max = min + size;
+        var rounding = 7 * scale;
+        var drawList = ImGui.GetWindowDrawList();
+        drawList.AddRectFilled(
+            min + new Vector2(0, 2 * scale),
+            max + new Vector2(0, 2 * scale),
+            ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.32f)),
+            rounding);
+        drawList.AddRectFilled(min, max, ImGui.GetColorU32(ToVector(rgb)), rounding);
+        drawList.AddRect(
+            min,
+            max,
+            ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.24f)),
+            rounding,
+            ImDrawFlags.None,
+            Math.Max(1, scale));
+        drawList.AddLine(
+            min + new Vector2(7, 6) * scale,
+            new Vector2(max.X - 7 * scale, min.Y + 6 * scale),
+            ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.28f)),
+            Math.Max(1, scale));
+
+        ImGui.InvisibleButton($"##routeColorPreview{index}", size);
+        if (ImGui.IsItemHovered())
+        {
+            var nearest = ChocoboData.NearestColor(rgb);
+            ImGui.SetTooltip($"Predicted after this feed: {nearest.Name}\nRGB {rgb.R} / {rgb.G} / {rgb.B}  ·  {rgb.Hex}");
+        }
     }
 
     private bool DrawColorCombo(string id, ref int index, ref string searchText)
