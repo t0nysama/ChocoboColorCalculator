@@ -1,0 +1,438 @@
+<Window x:Class="ChocoboColorCalculator.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Chocobo Color Calculator"
+        Width="1180" Height="820" MinWidth="980" MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        Background="#090E1B" Foreground="#EEF3FF"
+        FontFamily="Segoe UI Variable, Segoe UI"
+        Icon="pack://application:,,,/ChocoboColorCalculator.Desktop;component/Assets/icon.png">
+    <Window.Resources>
+        <SolidColorBrush x:Key="CanvasBrush" Color="#090E1B" />
+        <SolidColorBrush x:Key="CardBrush" Color="#D9162033" />
+        <SolidColorBrush x:Key="RaisedBrush" Color="#E61D2941" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#46577B" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#98A7C4" />
+        <SolidColorBrush x:Key="GoldBrush" Color="#FFBC4D" />
+        <SolidColorBrush x:Key="BlueBrush" Color="#55B2FF" />
+        <SolidColorBrush x:Key="VioletBrush" Color="#9D73FF" />
+        <SolidColorBrush x:Key="GreenBrush" Color="#51E49B" />
+        <SolidColorBrush x:Key="CoralBrush" Color="#FF6870" />
+
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource CardBrush}" />
+            <Setter Property="BorderBrush" Value="#40506E" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="22" ShadowDepth="7" Opacity="0.28" Color="#000000" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+        </Style>
+
+        <Style x:Key="InputStyle" TargetType="TextBox">
+            <Setter Property="Foreground" Value="#F4F7FF" />
+            <Setter Property="Background" Value="#CC0D1424" />
+            <Setter Property="BorderBrush" Value="#4A5C80" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,9" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="CaretBrush" Value="{StaticResource BlueBrush}" />
+        </Style>
+
+        <Style x:Key="ComboStyle" TargetType="ComboBox">
+            <Setter Property="Foreground" Value="#111827" />
+            <Setter Property="Background" Value="#F3F6FC" />
+            <Setter Property="BorderBrush" Value="#65789C" />
+            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="MaxDropDownHeight" Value="340" />
+        </Style>
+
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="17,10" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#8F55EF" Offset="0" />
+                        <GradientStop Color="#258CE0" Offset="1" />
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.86" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="RenderTransform">
+                                    <Setter.Value><TranslateTransform Y="2" /></Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.35" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Background" Value="#293650" />
+            <Setter Property="BorderBrush" Value="#53678E" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="22,11" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabBorder" Background="{TemplateBinding Background}" BorderBrush="#506181" BorderThickness="1" CornerRadius="9" Padding="{TemplateBinding Padding}" Margin="0,0,8,0">
+                            <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#33415E" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#283550" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="12" />
+            <Setter Property="Background" Value="#0C1422" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}" IsDirectionReversed="True" Focusable="False">
+                                <Track.DecreaseRepeatButton><RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="False" /></Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb MinHeight="34">
+                                        <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="#506384" CornerRadius="6" Margin="2" /></ControlTemplate></Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton><RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="False" /></Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="#B8101727" />
+            <Setter Property="Foreground" Value="#EAF0FF" />
+            <Setter Property="BorderBrush" Value="#425373" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="GridLinesVisibility" Value="Horizontal" />
+            <Setter Property="HorizontalGridLinesBrush" Value="#263653" />
+            <Setter Property="HeadersVisibility" Value="Column" />
+            <Setter Property="RowHeaderWidth" Value="0" />
+            <Setter Property="CanUserAddRows" Value="False" />
+            <Setter Property="CanUserDeleteRows" Value="False" />
+            <Setter Property="CanUserResizeRows" Value="False" />
+            <Setter Property="AutoGenerateColumns" Value="False" />
+            <Setter Property="SelectionMode" Value="Single" />
+            <Setter Property="SelectionUnit" Value="FullRow" />
+        </Style>
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#24304A" />
+            <Setter Property="Foreground" Value="#C5D2EB" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="#111A2B" />
+            <Setter Property="Foreground" Value="#EAF0FF" />
+            <Setter Property="MinHeight" Value="44" />
+            <Style.Triggers>
+                <Trigger Property="AlternationIndex" Value="1">
+                    <Setter Property="Background" Value="#172237" />
+                </Trigger>
+                <DataTrigger Binding="{Binding IsNext}" Value="True">
+                    <Setter Property="Background" Value="#4A371D" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="DataGridCell">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="{StaticResource CanvasBrush}">
+        <Canvas IsHitTestVisible="False" Opacity="0.4">
+            <Ellipse Width="520" Height="520" Canvas.Left="760" Canvas.Top="-280">
+                <Ellipse.Fill><RadialGradientBrush><GradientStop Color="#5742A8" Offset="0" /><GradientStop Color="#005742A8" Offset="1" /></RadialGradientBrush></Ellipse.Fill>
+            </Ellipse>
+            <Ellipse Width="500" Height="500" Canvas.Left="-260" Canvas.Top="510">
+                <Ellipse.Fill><RadialGradientBrush><GradientStop Color="#164D83" Offset="0" /><GradientStop Color="#00164D83" Offset="1" /></RadialGradientBrush></Ellipse.Fill>
+            </Ellipse>
+        </Canvas>
+
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="116" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="34" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Style="{StaticResource CardStyle}" Padding="20,14" Margin="0,0,0,14">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#EF202B47" Offset="0" />
+                        <GradientStop Color="#E1172948" Offset="1" />
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <Border Width="60" Height="60" CornerRadius="14" Background="#162139" Padding="6">
+                        <Image Source="pack://application:,,,/ChocoboColorCalculator.Desktop;component/Assets/icon.png" Stretch="Uniform" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="16,3,0,0">
+                        <TextBlock FontSize="18" FontWeight="Bold">
+                            <Run Text="CHOCOBO COLOR" Foreground="{StaticResource GoldBrush}" /><Run Text=" CALCULATOR" Foreground="#EEF3FF" />
+                        </TextBlock>
+                        <TextBlock Text="Standalone Desktop Edition" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" />
+                        <TextBlock Text="Verified routes · manual progress · visual exports" Foreground="{StaticResource GreenBrush}" FontSize="12" Margin="0,5,0,0" />
+                    </StackPanel>
+                    <Border Grid.Column="2" Background="#23304A" BorderBrush="#52668D" BorderThickness="1" CornerRadius="999" Padding="14,7" VerticalAlignment="Center">
+                        <TextBlock Text="7,225 ROUTES VERIFIED" Foreground="{StaticResource BlueBrush}" FontSize="11" FontWeight="Bold" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <TabControl Grid.Row="1" x:Name="MainTabs">
+                <TabItem Header="CALCULATOR">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,14,8,0">
+                        <StackPanel>
+                            <Border Style="{StaticResource CardStyle}">
+                                <StackPanel>
+                                    <TextBlock Text="CREATE A ROUTE" FontSize="17" FontWeight="Bold" />
+                                    <TextBlock Text="Search and select the visible starting plumage and desired result." Foreground="{StaticResource MutedBrush}" Margin="0,4,0,16" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="70" /><ColumnDefinition /></Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Background="#172239" BorderBrush="#42678B" BorderThickness="1" CornerRadius="13" Padding="16">
+                                            <StackPanel>
+                                                <TextBlock Text="CURRENT PLUMAGE" Style="{StaticResource SectionLabel}" Foreground="{StaticResource BlueBrush}" />
+                                                <Grid Margin="0,11,0,10">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="46" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                    <Border x:Name="CurrentSwatch" Width="38" Height="38" CornerRadius="9" BorderBrush="#80FFFFFF" BorderThickness="1" />
+                                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                                        <TextBlock x:Name="CurrentNameText" FontWeight="SemiBold" FontSize="15" />
+                                                        <TextBlock x:Name="CurrentRgbText" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,3,0,0" />
+                                                    </StackPanel>
+                                                </Grid>
+                                                <TextBlock Text="SEARCH BY NAME" Style="{StaticResource SectionLabel}" FontSize="10" Margin="0,0,0,5" />
+                                                <TextBox x:Name="CurrentSearchBox" Style="{StaticResource InputStyle}" TextChanged="CurrentSearchBox_TextChanged" ToolTip="Type any part of a color name" />
+                                                <ComboBox x:Name="CurrentColorCombo" Style="{StaticResource ComboStyle}" Margin="0,8,0,0" DisplayMemberPath="Name" SelectionChanged="CurrentColorCombo_SelectionChanged" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                            <TextBlock Text="→" FontSize="30" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" />
+                                            <TextBlock Text="RELIABLE" Foreground="{StaticResource MutedBrush}" FontSize="9" FontWeight="Bold" />
+                                        </StackPanel>
+
+                                        <Border Grid.Column="2" Background="#1A1E3B" BorderBrush="#6754A5" BorderThickness="1" CornerRadius="13" Padding="16">
+                                            <StackPanel>
+                                                <TextBlock Text="DESIRED PLUMAGE" Style="{StaticResource SectionLabel}" Foreground="{StaticResource VioletBrush}" />
+                                                <Grid Margin="0,11,0,10">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="46" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                    <Border x:Name="TargetSwatch" Width="38" Height="38" CornerRadius="9" BorderBrush="#80FFFFFF" BorderThickness="1" />
+                                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                                        <TextBlock x:Name="TargetNameText" FontWeight="SemiBold" FontSize="15" />
+                                                        <TextBlock x:Name="TargetRgbText" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,3,0,0" />
+                                                    </StackPanel>
+                                                </Grid>
+                                                <TextBlock Text="SEARCH BY NAME" Style="{StaticResource SectionLabel}" FontSize="10" Margin="0,0,0,5" />
+                                                <TextBox x:Name="TargetSearchBox" Style="{StaticResource InputStyle}" TextChanged="TargetSearchBox_TextChanged" ToolTip="Type any part of a color name" />
+                                                <ComboBox x:Name="TargetColorCombo" Style="{StaticResource ComboStyle}" Margin="0,8,0,0" DisplayMemberPath="Name" SelectionChanged="TargetColorCombo_SelectionChanged" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                    <Grid Margin="0,14,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="3*" /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                        <Button Grid.Column="0" Content="CALCULATE RELIABLE ROUTE" Style="{StaticResource PrimaryButton}" Click="CalculateButton_Click" />
+                                        <Button Grid.Column="2" Content="SWAP COLORS" Style="{StaticResource SecondaryButton}" Click="SwapButton_Click" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border x:Name="EmptyStatePanel" Style="{StaticResource CardStyle}" Margin="0,14,0,0" Padding="28">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="READY WHEN YOU ARE" Foreground="{StaticResource BlueBrush}" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Choose two plumage colors and calculate a verified feeding route." Margin="0,8,0,0" FontSize="16" />
+                                    <TextBlock Text="Your shopping list, next fruit, complete route, and export tools will appear here." Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0" />
+                                </StackPanel>
+                            </Border>
+
+                            <StackPanel x:Name="ActiveRoutePanel" Visibility="Collapsed" Margin="0,14,0,0">
+                                <TextBlock Text="ROUTE OVERVIEW" FontSize="17" FontWeight="Bold" Margin="4,0,0,9" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Style="{StaticResource CardStyle}" Padding="17">
+                                        <StackPanel><TextBlock Text="TOTAL FEEDS" Style="{StaticResource SectionLabel}" Foreground="{StaticResource GoldBrush}" /><TextBlock x:Name="TotalFeedsText" FontSize="26" FontWeight="Bold" Margin="0,7,0,0" /><TextBlock Text="ordered fruit steps" Foreground="{StaticResource MutedBrush}" /></StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="17">
+                                        <StackPanel><TextBlock Text="PREDICTED COLOR" Style="{StaticResource SectionLabel}" Foreground="{StaticResource BlueBrush}" /><TextBlock x:Name="PredictedColorText" FontSize="19" FontWeight="Bold" Margin="0,7,0,0" /><TextBlock x:Name="EndpointRgbText" Foreground="{StaticResource MutedBrush}" /></StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="4" Style="{StaticResource CardStyle}" Padding="17">
+                                        <StackPanel><TextBlock Text="RELIABILITY MARGIN" Style="{StaticResource SectionLabel}" Foreground="{StaticResource GreenBrush}" /><TextBlock x:Name="MarginText" FontSize="26" FontWeight="Bold" Margin="0,7,0,0" /><TextBlock Text="distance from nearest rival" Foreground="{StaticResource MutedBrush}" /></StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <Border Style="{StaticResource CardStyle}" Margin="0,12,0,0" Padding="17">
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="145" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                        <TextBlock Text="SHOPPING LIST" Style="{StaticResource SectionLabel}" VerticalAlignment="Center" />
+                                        <ItemsControl Grid.Column="1" x:Name="ShoppingListItems">
+                                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="#23314B" CornerRadius="999" Padding="11,7" Margin="0,0,10,0">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Ellipse Width="12" Height="12" Fill="{Binding Brush}" Margin="0,0,8,0" />
+                                                            <TextBlock Text="{Binding Name}" />
+                                                            <TextBlock Text="{Binding CountText}" Foreground="{StaticResource GoldBrush}" FontWeight="Bold" Margin="8,0,0,0" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource CardStyle}" Margin="0,12,0,0" Padding="18" Background="#D62A251A" BorderBrush="#8A6431">
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition /><ColumnDefinition Width="230" /></Grid.ColumnDefinitions>
+                                        <Border Width="54" Height="54" CornerRadius="13" Background="{StaticResource GoldBrush}"><TextBlock x:Name="NextFruitInitial" Text="?" Foreground="#1B1A13" FontSize="25" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock x:Name="NextStepLabel" Foreground="{StaticResource GoldBrush}" FontWeight="Bold" FontSize="12" />
+                                            <TextBlock x:Name="NextFruitText" FontWeight="Bold" FontSize="22" Margin="0,4,0,0" />
+                                            <TextBlock x:Name="NextInstructionText" Foreground="{StaticResource MutedBrush}" Margin="0,3,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                            <TextBlock x:Name="ProgressText" HorizontalAlignment="Right" FontWeight="SemiBold" />
+                                            <ProgressBar x:Name="RouteProgressBar" Height="9" Margin="0,8,0,0" Foreground="{StaticResource GreenBrush}" Background="#101827" BorderThickness="0" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource CardStyle}" Margin="0,12,0,0" Padding="17">
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="MANUAL TRACKING" Style="{StaticResource SectionLabel}" Foreground="{StaticResource BlueBrush}" />
+                                            <TextBlock Text="Automatic in-game detection is available only in the Dalamud edition." Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                            <Button x:Name="ConfirmNextButton" Content="CONFIRM NEXT" Style="{StaticResource PrimaryButton}" Click="ConfirmNextButton_Click" Margin="0,0,8,0" />
+                                            <Button Content="UNDO" Style="{StaticResource SecondaryButton}" Click="UndoButton_Click" Margin="0,0,8,0" />
+                                            <Button Content="RESET" Style="{StaticResource SecondaryButton}" Click="ResetButton_Click" Margin="0,0,8,0" />
+                                            <Button Content="CLEAR" Style="{StaticResource SecondaryButton}" Click="ClearButton_Click" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource CardStyle}" Margin="0,12,0,0" Padding="17" BorderBrush="#774E84">
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="EXPORT ROUTE" Style="{StaticResource SectionLabel}" Foreground="{StaticResource CoralBrush}" />
+                                            <TextBlock Text="Create a complete status-free guide with every step, RGB result, shopping list, and instructions." Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                            <Button Content="PDF" Style="{StaticResource SecondaryButton}" Click="ExportPdfButton_Click" Margin="0,0,8,0" />
+                                            <Button Content="TEXT" Style="{StaticResource SecondaryButton}" Click="ExportTextButton_Click" Margin="0,0,8,0" />
+                                            <Button Content="HTML" Style="{StaticResource SecondaryButton}" Click="ExportHtmlButton_Click" Margin="0,0,8,0" />
+                                            <Button Content="OPEN FOLDER" Style="{StaticResource SecondaryButton}" Click="OpenFolderButton_Click" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource CardStyle}" Margin="0,12,0,16" Padding="0">
+                                    <Grid>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="520" /></Grid.RowDefinitions>
+                                        <Grid Margin="18,15"><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <StackPanel><TextBlock Text="ORDERED FEEDING ROUTE" FontWeight="Bold" FontSize="15" /><TextBlock Text="Complete one fruit at a time from top to bottom. Progress is saved automatically." Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" /></StackPanel>
+                                            <TextBlock Grid.Column="1" x:Name="RouteTitleText" Foreground="{StaticResource GoldBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <DataGrid Grid.Row="1" x:Name="RouteGrid" AlternationCount="2" ItemsSource="{Binding RouteSteps}" IsReadOnly="False">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="STEP" Binding="{Binding NumberText}" Width="65" IsReadOnly="True" />
+                                                <DataGridTemplateColumn Header="" Width="52" IsReadOnly="True"><DataGridTemplateColumn.CellTemplate><DataTemplate><Ellipse Width="14" Height="14" Fill="{Binding FruitBrush}" /></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+                                                <DataGridTextColumn Header="FRUIT" Binding="{Binding FruitName}" Width="2*" IsReadOnly="True" />
+                                                <DataGridTextColumn Header="EFFECT" Binding="{Binding EffectText}" Width="140" IsReadOnly="True" />
+                                                <DataGridTemplateColumn Header="RGB AFTER" Width="180" IsReadOnly="True"><DataGridTemplateColumn.CellTemplate><DataTemplate><StackPanel Orientation="Horizontal"><Border Width="18" Height="18" CornerRadius="5" Background="{Binding RgbBrush}" Margin="0,0,9,0" /><TextBlock Text="{Binding RgbText}" VerticalAlignment="Center" /></StackPanel></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+                                                <DataGridTemplateColumn Header="DONE" Width="80"><DataGridTemplateColumn.CellTemplate><DataTemplate><CheckBox IsChecked="{Binding IsComplete, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanToggle}" HorizontalAlignment="Center" VerticalAlignment="Center" Click="StepCheckBox_Click" /></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="GUIDE">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,14,8,0">
+                        <StackPanel>
+                            <TextBlock Text="HOW IT WORKS" FontSize="20" FontWeight="Bold" Margin="4,0,0,12" />
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition /></Grid.ColumnDefinitions><TextBlock Text="01" Foreground="{StaticResource GoldBrush}" FontSize="24" FontWeight="Bold" /><StackPanel Grid.Column="1"><TextBlock Text="CHOOSE COLORS" FontWeight="Bold" FontSize="16" /><TextBlock Text="Select the plumage your chocobo currently shows and the color you want. A Han Lemon reset to Desert Yellow provides the most reliable baseline." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,5,0,0" /></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition /></Grid.ColumnDefinitions><TextBlock Text="02" Foreground="{StaticResource BlueBrush}" FontSize="24" FontWeight="Bold" /><StackPanel Grid.Column="1"><TextBlock Text="FOLLOW THE ORDER" FontWeight="Bold" FontSize="16" /><TextBlock Text="Feed only the listed fruit from top to bottom. The route is arranged to reach its selected RGB endpoint without unintended channel clamping." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,5,0,0" /></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition /></Grid.ColumnDefinitions><TextBlock Text="03" Foreground="{StaticResource VioletBrush}" FontSize="24" FontWeight="Bold" /><StackPanel Grid.Column="1"><TextBlock Text="TRACK EACH FEED" FontWeight="Bold" FontSize="16" /><TextBlock Text="Use Confirm Next or the checkboxes in the ordered list. Undo and Reset are always available, and progress is restored when the desktop app reopens." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,5,0,0" /></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition /></Grid.ColumnDefinitions><TextBlock Text="04" Foreground="{StaticResource GreenBrush}" FontSize="24" FontWeight="Bold" /><StackPanel Grid.Column="1"><TextBlock Text="WAIT SIX HOURS" FontWeight="Bold" FontSize="16" /><TextBlock Text="After every step is complete, leave the chocobo stabled for six Earth hours. Removing it early cancels the pending plumage change." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,5,0,0" /></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource CardStyle}" Background="#D62A251A" BorderBrush="#8A6431"><StackPanel><TextBlock Text="IMPORTANT ACCURACY NOTE" Foreground="{StaticResource GoldBrush}" FontWeight="Bold" /><TextBlock Text="Square Enix has not published the hidden per-fruit formula. The calculator uses the established ±5 RGB model and verifies every ordered route, but a named starting color cannot reveal a previously recolored chocobo's exact hidden RGB values. If a narrow target misses, calculate a correction from the resulting visible color." Foreground="#E8DDBE" TextWrapping="Wrap" Margin="0,7,0,0" /></StackPanel></Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+
+            <Grid Grid.Row="2" Margin="4,6,4,0">
+                <TextBlock x:Name="StatusText" Text="Ready." Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="Desktop edition · manual tracking" Foreground="#60708F" HorizontalAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

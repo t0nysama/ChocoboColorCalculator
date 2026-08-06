@@ -22,6 +22,18 @@ Open the calculator with `/chococolor`. Future releases will appear through Dala
 
 This is a third-party custom-repository plugin and is not part of Dalamud's official plugin repository. Support for this plugin should be requested through this GitHub project rather than the XIVLauncher support channels.
 
+## Standalone Windows desktop app
+
+Prefer a normal Windows program? Download the self-contained desktop edition from the [latest desktop release](https://github.com/t0nysama/ChocoboColorCalculator/releases/tag/desktop-v1.0.0).
+
+1. Download `ChocoboColorCalculator-Desktop-win-x64.zip`.
+2. Extract the ZIP file to a folder of your choice.
+3. Run `ChocoboColorCalculator.Desktop.exe`.
+
+The desktop application does not require XIVLauncher, Dalamud, or a separate .NET installation. It shares the same verified calculation and export engine as the plugin and includes searchable colors, shopping totals, next-feed guidance, the complete ordered route, manual progress tracking, persistent state, PDF/Text/HTML exports, and the built-in guide.
+
+Automatic feed detection is exclusive to the in-game Dalamud plugin because it depends on FFXIV's structured chat events. The desktop edition clearly uses manual tracking instead. The executable is currently unsigned, so Windows SmartScreen may ask you to confirm that you want to run it.
+
 ## What is implemented
 
 - All 85 named companion colors and their published RGB values.
@@ -52,6 +64,15 @@ dotnet run --project .\ChocoboColorCalculator.Verifier\ChocoboColorCalculator.Ve
 ```
 
 Add the resulting `ChocoboColorCalculator.dll` under `ChocoboColorCalculator/bin/x64/Release` as a Dalamud dev plugin, then open it with `/chococolor`.
+
+To build or publish the standalone Windows application:
+
+```powershell
+dotnet build .\ChocoboColorCalculator.Desktop\ChocoboColorCalculator.Desktop.csproj -c Release
+dotnet publish .\ChocoboColorCalculator.Desktop\ChocoboColorCalculator.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+```
+
+Desktop releases use `desktop-v*` tags and are deliberately not marked as the repository-wide latest release. This keeps Dalamud's `releases/latest/download/latest.zip` installation URL pointed only at plugin releases.
 
 ## Research basis
 
