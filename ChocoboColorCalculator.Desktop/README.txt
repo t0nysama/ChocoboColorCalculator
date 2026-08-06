@@ -15,8 +15,8 @@ FEATURES
 - Searchable current and desired color selectors.
 - Shopping list, next-feed guidance, and a complete RGB route table.
 - Manual checkboxes, Confirm Next, Undo, Reset, and saved progress.
-- A lightweight update check on launch with a download notification when a
-  newer desktop release is available.
+- A lightweight update check on launch, a dedicated Updates tab, and one-click
+  download, integrity verification, installation, and automatic relaunch.
 - PDF, plain-text, and responsive HTML exports.
 - A built-in feeding and accuracy guide.
 
@@ -33,8 +33,17 @@ Route exports:
   %USERPROFILE%\Documents\Chocobo Color Calculator\Exports
 
 The application does not require an account and does not send route or progress
-data anywhere. Its only network request checks this project's public GitHub
-releases once when the application launches.
+data anywhere. It checks this project's public GitHub releases once at launch,
+when Check for Updates is selected, and when the user chooses to download an
+available update.
+
+UPDATES
+The running version is shown in the application header and Updates tab. Use
+Check for Updates at any time. When a newer desktop release is available,
+Download, Install & Relaunch retrieves the ZIP, checks its GitHub SHA-256
+digest, safely replaces the application files after shutdown, and reopens the
+new version. Windows may request administrator permission only if the app is in
+a protected folder.
 
 PROJECT
 https://github.com/t0nysama/ChocoboColorCalculator

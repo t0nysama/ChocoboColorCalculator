@@ -19,7 +19,11 @@ public partial class MainWindow : Window
     private readonly DesktopState state;
     private readonly DesktopUpdateService updateService = new();
     private readonly CancellationTokenSource updateCheckCancellation = new();
+    private readonly Version currentVersion;
     private DesktopUpdate? availableUpdate;
+    private CancellationTokenSource? updateDownloadCancellation;
+    private bool isCheckingForUpdates;
+    private bool isInstallingUpdate;
     private bool isInitializing = true;
 
     public ObservableCollection<RouteStepItem> RouteSteps { get; } = [];
@@ -28,6 +32,10 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = this;
+        currentVersion = GetType().Assembly.GetName().Version ?? new Version(1, 0, 2, 0);
+        CurrentVersionHeaderText.Text = $"VERSION {currentVersion.ToString(3)}";
+        UpdateCurrentVersionText.Text = currentVersion.ToString(3);
+        DesktopUpdateService.CleanupOldUpdates();
         allColors = ChocoboData.Colors
             .Select((color, index) => new ColorOption(index, color.Name, color.Rgb, BrushFor(color.Rgb)))
             .ToList();
@@ -47,6 +55,8 @@ public partial class MainWindow : Window
         Closed += (_, _) =>
         {
             updateCheckCancellation.Cancel();
+            updateDownloadCancellation?.Cancel();
+            updateDownloadCancellation?.Dispose();
             updateCheckCancellation.Dispose();
             updateService.Dispose();
         };
@@ -351,28 +361,158 @@ public partial class MainWindow : Window
         ContentRendered -= MainWindow_ContentRendered;
         await Task.Yield();
 
-        var currentVersion = GetType().Assembly.GetName().Version ?? new Version(1, 0, 1, 0);
-        availableUpdate = await updateService.CheckAsync(currentVersion, updateCheckCancellation.Token);
-        if (availableUpdate is null || !IsLoaded)
-            return;
-
-        UpdateMessageText.Text = $"Desktop {availableUpdate.Version} is ready. You are using {currentVersion.ToString(3)}.";
-        UpdateBanner.Visibility = Visibility.Visible;
+        await CheckForUpdatesAsync(userInitiated: false);
     }
 
-    private void DownloadUpdateButton_Click(object sender, RoutedEventArgs e)
+    private async void CheckNowButton_Click(object sender, RoutedEventArgs e) =>
+        await CheckForUpdatesAsync(userInitiated: true);
+
+    private async Task CheckForUpdatesAsync(bool userInitiated)
     {
-        if (availableUpdate is null)
+        if (isCheckingForUpdates || isInstallingUpdate)
             return;
 
         try
         {
-            Process.Start(new ProcessStartInfo { FileName = availableUpdate.DownloadUrl, UseShellExecute = true });
-            SetStatus($"Opened the download for desktop {availableUpdate.Version}.", false);
+            isCheckingForUpdates = true;
+            CheckNowButton.IsEnabled = false;
+            InstallNowButton.IsEnabled = false;
+            UpdateStatusTitleText.Text = "CHECKING FOR UPDATES";
+            UpdateStatusDetailText.Text = "Contacting the public GitHub releases service...";
+            UpdateLatestVersionText.Text = "Checking...";
+
+            var result = await updateService.CheckAsync(currentVersion, updateCheckCancellation.Token);
+            if (!IsLoaded)
+                return;
+            if (!result.Succeeded)
+            {
+                UpdateStatusTitleText.Text = "UPDATE CHECK UNAVAILABLE";
+                UpdateStatusDetailText.Text = result.ErrorMessage ?? "GitHub could not be reached.";
+                UpdateLatestVersionText.Text = "Unknown";
+                if (userInitiated)
+                    SetStatus("The update check could not be completed. Your calculator remains available.", true);
+                return;
+            }
+
+            availableUpdate = result.Update;
+            if (availableUpdate is null)
+            {
+                UpdateBanner.Visibility = Visibility.Collapsed;
+                UpdateLatestVersionText.Text = currentVersion.ToString(3);
+                UpdateStatusTitleText.Text = "YOU ARE UP TO DATE";
+                UpdateStatusDetailText.Text = $"Desktop {currentVersion.ToString(3)} is the newest available version.";
+                if (userInitiated)
+                    SetStatus($"Desktop {currentVersion.ToString(3)} is up to date.", false);
+                return;
+            }
+
+            UpdateLatestVersionText.Text = availableUpdate.Version.ToString(3);
+            UpdateStatusTitleText.Text = "UPDATE AVAILABLE";
+            UpdateStatusDetailText.Text = $"Desktop {availableUpdate.Version.ToString(3)} can be downloaded, installed, and relaunched automatically.";
+            UpdateMessageText.Text = $"Desktop {availableUpdate.Version.ToString(3)} is ready. You are using {currentVersion.ToString(3)}.";
+            UpdateBanner.Visibility = Visibility.Visible;
+            InstallNowButton.IsEnabled = true;
+            if (userInitiated)
+                SetStatus($"Desktop {availableUpdate.Version.ToString(3)} is available.", false);
+        }
+        catch (OperationCanceledException)
+        {
+            // Application shutdown cancels a pending background check.
+        }
+        finally
+        {
+            isCheckingForUpdates = false;
+            if (IsLoaded && !isInstallingUpdate)
+            {
+                CheckNowButton.IsEnabled = true;
+                InstallNowButton.IsEnabled = availableUpdate is not null;
+            }
+        }
+    }
+
+    private async void InstallUpdateButton_Click(object sender, RoutedEventArgs e) =>
+        await InstallAvailableUpdateAsync();
+
+    private async Task InstallAvailableUpdateAsync()
+    {
+        if (isInstallingUpdate)
+            return;
+        if (availableUpdate is null)
+        {
+            await CheckForUpdatesAsync(userInitiated: true);
+            if (availableUpdate is null)
+                return;
+        }
+
+        isInstallingUpdate = true;
+        updateDownloadCancellation = CancellationTokenSource.CreateLinkedTokenSource(updateCheckCancellation.Token);
+        CheckNowButton.IsEnabled = false;
+        InstallNowButton.IsEnabled = false;
+        UpdateProgressPanel.Visibility = Visibility.Visible;
+        CancelDownloadButton.Visibility = Visibility.Visible;
+        UpdateStatusTitleText.Text = "PREPARING UPDATE";
+        UpdateStatusDetailText.Text = "The calculator remains usable while the update downloads and is verified.";
+
+        try
+        {
+            var progress = new Progress<DesktopUpdateProgress>(value =>
+            {
+                UpdateDownloadProgressBar.Value = value.Percent;
+                UpdateProgressPercentText.Text = $"{value.Percent:F0}%";
+                UpdateProgressText.Text = value.Message;
+            });
+            var prepared = await updateService.DownloadAndPrepareAsync(
+                availableUpdate,
+                progress,
+                updateDownloadCancellation.Token);
+
+            UpdateStatusTitleText.Text = "INSTALLING AND RELAUNCHING";
+            UpdateStatusDetailText.Text = "The calculator will close briefly and reopen on the new version.";
+            SaveState();
+            var executablePath = Environment.ProcessPath
+                ?? throw new InvalidOperationException("The running executable path could not be determined.");
+            DesktopUpdateInstaller.Launch(prepared, executablePath, Environment.ProcessId);
+            Application.Current.Shutdown();
+        }
+        catch (OperationCanceledException)
+        {
+            UpdateStatusTitleText.Text = "DOWNLOAD CANCELED";
+            UpdateStatusDetailText.Text = "No application files were changed. You can try again whenever you are ready.";
+            SetStatus("Desktop update download canceled.", false);
         }
         catch (Exception exception)
         {
-            SetStatus($"Could not open the update download: {exception.Message}", true);
+            UpdateStatusTitleText.Text = "UPDATE COULD NOT BE INSTALLED";
+            UpdateStatusDetailText.Text = exception.Message;
+            SetStatus("The update failed safely; the current application was not replaced.", true);
+        }
+        finally
+        {
+            updateDownloadCancellation?.Dispose();
+            updateDownloadCancellation = null;
+            isInstallingUpdate = false;
+            if (IsLoaded)
+            {
+                CheckNowButton.IsEnabled = true;
+                InstallNowButton.IsEnabled = availableUpdate is not null;
+                CancelDownloadButton.Visibility = Visibility.Collapsed;
+            }
+        }
+    }
+
+    private void CancelDownloadButton_Click(object sender, RoutedEventArgs e) =>
+        updateDownloadCancellation?.Cancel();
+
+    private void ViewReleaseButton_Click(object sender, RoutedEventArgs e)
+    {
+        var url = availableUpdate?.ReleaseUrl ?? "https://github.com/t0nysama/ChocoboColorCalculator/releases";
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+        }
+        catch (Exception exception)
+        {
+            SetStatus($"Could not open the releases page: {exception.Message}", true);
         }
     }
 

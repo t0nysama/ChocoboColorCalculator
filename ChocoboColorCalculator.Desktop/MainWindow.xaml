@@ -240,9 +240,14 @@
                         <TextBlock Text="Standalone Desktop Edition" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" />
                         <TextBlock Text="Verified routes · manual progress · visual exports" Foreground="{StaticResource GreenBrush}" FontSize="12" Margin="0,5,0,0" />
                     </StackPanel>
-                    <Border Grid.Column="2" Background="#23304A" BorderBrush="#52668D" BorderThickness="1" CornerRadius="999" Padding="14,7" VerticalAlignment="Center">
-                        <TextBlock Text="7,225 ROUTES VERIFIED" Foreground="{StaticResource BlueBrush}" FontSize="11" FontWeight="Bold" />
-                    </Border>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Background="#28213F" BorderBrush="#7359B0" BorderThickness="1" CornerRadius="999" Padding="13,7" Margin="0,0,9,0">
+                            <TextBlock x:Name="CurrentVersionHeaderText" Text="VERSION" Foreground="{StaticResource VioletBrush}" FontSize="11" FontWeight="Bold" />
+                        </Border>
+                        <Border Background="#23304A" BorderBrush="#52668D" BorderThickness="1" CornerRadius="999" Padding="14,7">
+                            <TextBlock Text="7,225 ROUTES VERIFIED" Foreground="{StaticResource BlueBrush}" FontSize="11" FontWeight="Bold" />
+                        </Border>
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -267,7 +272,7 @@
                         <TextBlock x:Name="UpdateMessageText" Text="A newer desktop release is ready." FontSize="14" FontWeight="SemiBold" Margin="0,3,0,0" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Content="DOWNLOAD UPDATE" Style="{StaticResource PrimaryButton}" Click="DownloadUpdateButton_Click" Margin="0,0,8,0" />
+                        <Button Content="INSTALL UPDATE" Style="{StaticResource PrimaryButton}" Click="InstallUpdateButton_Click" Margin="0,0,8,0" />
                         <Button Content="NOT NOW" Style="{StaticResource SecondaryButton}" Click="DismissUpdateButton_Click" />
                     </StackPanel>
                 </Grid>
@@ -439,6 +444,63 @@
                                     </Grid>
                                 </Border>
                             </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="UPDATES">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,14,8,0">
+                        <StackPanel>
+                            <TextBlock Text="DESKTOP UPDATES" FontSize="20" FontWeight="Bold" Margin="4,0,0,4" />
+                            <TextBlock Text="Keep the standalone calculator current without manually replacing files." Foreground="{StaticResource MutedBrush}" Margin="4,0,0,14" />
+
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Style="{StaticResource CardStyle}" Padding="17">
+                                    <StackPanel><TextBlock Text="INSTALLED VERSION" Style="{StaticResource SectionLabel}" Foreground="{StaticResource VioletBrush}" /><TextBlock x:Name="UpdateCurrentVersionText" Text="1.0.2" FontSize="25" FontWeight="Bold" Margin="0,9,0,0" /><TextBlock Text="currently running" Foreground="{StaticResource MutedBrush}" Margin="0,3,0,0" /></StackPanel>
+                                </Border>
+                                <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="17">
+                                    <StackPanel><TextBlock Text="LATEST VERSION" Style="{StaticResource SectionLabel}" Foreground="{StaticResource BlueBrush}" /><TextBlock x:Name="UpdateLatestVersionText" Text="Checking..." FontSize="25" FontWeight="Bold" Margin="0,9,0,0" /><TextBlock Text="newest desktop release" Foreground="{StaticResource MutedBrush}" Margin="0,3,0,0" /></StackPanel>
+                                </Border>
+                                <Border Grid.Column="4" Style="{StaticResource CardStyle}" Padding="17">
+                                    <StackPanel><TextBlock Text="AUTOMATIC CHECK" Style="{StaticResource SectionLabel}" Foreground="{StaticResource GreenBrush}" /><TextBlock Text="ON" FontSize="25" FontWeight="Bold" Foreground="{StaticResource GreenBrush}" Margin="0,9,0,0" /><TextBlock Text="once after every launch" Foreground="{StaticResource MutedBrush}" Margin="0,3,0,0" /></StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <Border Style="{StaticResource CardStyle}" Margin="0,12,0,0" Padding="20" BorderBrush="#6754A5">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="54" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <Border Width="40" Height="40" CornerRadius="20" Background="#7749D8" VerticalAlignment="Top"><TextBlock Text="&#x21BB;" FontSize="23" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock x:Name="UpdateStatusTitleText" Text="CHECKING FOR UPDATES" FontSize="16" FontWeight="Bold" />
+                                        <TextBlock x:Name="UpdateStatusDetailText" Text="Contacting the public GitHub releases service..." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <Border x:Name="UpdateProgressPanel" Style="{StaticResource CardStyle}" Visibility="Collapsed" Margin="0,12,0,0" Padding="18" BorderBrush="#3F7597">
+                                <StackPanel>
+                                    <Grid><TextBlock Text="DOWNLOADING AND VERIFYING" Style="{StaticResource SectionLabel}" Foreground="{StaticResource BlueBrush}" /><TextBlock x:Name="UpdateProgressPercentText" Text="0%" HorizontalAlignment="Right" FontWeight="Bold" /></Grid>
+                                    <ProgressBar x:Name="UpdateDownloadProgressBar" Height="10" Minimum="0" Maximum="100" Margin="0,10,0,0" Foreground="{StaticResource GreenBrush}" Background="#101827" BorderThickness="0" />
+                                    <TextBlock x:Name="UpdateProgressText" Text="Preparing..." Foreground="{StaticResource MutedBrush}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+
+                            <Grid Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="10" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="10" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="10" /><ColumnDefinition Width="Auto" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" x:Name="CheckNowButton" Content="CHECK FOR UPDATES" Style="{StaticResource PrimaryButton}" Click="CheckNowButton_Click" />
+                                <Button Grid.Column="2" x:Name="InstallNowButton" Content="DOWNLOAD, INSTALL &amp; RELAUNCH" Style="{StaticResource SecondaryButton}" Click="InstallUpdateButton_Click" IsEnabled="False" />
+                                <Button Grid.Column="4" x:Name="ViewReleaseButton" Content="VIEW RELEASES" Style="{StaticResource SecondaryButton}" Click="ViewReleaseButton_Click" />
+                                <Button Grid.Column="6" x:Name="CancelDownloadButton" Content="CANCEL DOWNLOAD" Style="{StaticResource SecondaryButton}" Click="CancelDownloadButton_Click" Visibility="Collapsed" />
+                            </Grid>
+
+                            <Border Style="{StaticResource CardStyle}" Margin="0,12,0,12" Background="#D61B2A3A" BorderBrush="#3D5874">
+                                <StackPanel>
+                                    <TextBlock Text="SAFE UPDATE PROCESS" Foreground="{StaticResource BlueBrush}" FontWeight="Bold" />
+                                    <TextBlock Text="The update downloads in the background, is checked against GitHub's SHA-256 digest, and is unpacked only after every archive path is validated. The app then closes, replaces its files atomically with backups, and relaunches. If replacement fails, the previous files are restored." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,7,0,0" />
+                                    <TextBlock Text="Windows may request administrator permission only when the application is installed in a protected folder." Foreground="#D5C58C" TextWrapping="Wrap" Margin="0,7,0,0" />
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
