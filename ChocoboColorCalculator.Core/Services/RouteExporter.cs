@@ -75,7 +75,7 @@ public static class RouteExporter
         builder.AppendLine($"  Desired color:    {document.TargetName} ({RgbText(document.TargetRgb)})");
         builder.AppendLine($"  Predicted result: {document.PredictedColorName} ({RgbText(document.EndpointRgb)})");
         builder.AppendLine($"  Reliable aim:     {RgbText(document.AimRgb)}");
-        builder.AppendLine($"  Reliability:      {document.ClassificationMargin:F2} from the nearest rival");
+        builder.AppendLine($"  Boundary clearance: {document.ClassificationMargin:F2} RGB units");
         builder.AppendLine();
         builder.AppendLine("SHOPPING LIST");
         AppendShoppingText(builder, document);
@@ -139,7 +139,7 @@ public static class RouteExporter
         builder.AppendLine("<section><h2>ROUTE OVERVIEW</h2><div class=\"grid\">");
         AppendHtmlColorCard(builder, "STARTING COLOR", document.StartName, document.StartRgb);
         AppendHtmlColorCard(builder, "DESIRED COLOR", document.TargetName, document.TargetRgb);
-        builder.AppendLine($"<div class=\"card\"><div class=\"label\">TOTAL FEEDS</div><div class=\"value\">{document.Steps.Count}</div><div>{Html(document.PredictedColorName)} predicted &middot; margin {document.ClassificationMargin:F2}</div></div>");
+        builder.AppendLine($"<div class=\"card\"><div class=\"label\">TOTAL FEEDS</div><div class=\"value\">{document.Steps.Count}</div><div>{Html(document.PredictedColorName)} predicted &middot; boundary clearance {document.ClassificationMargin:F2}</div></div>");
         builder.AppendLine("</div></section>");
 
         builder.AppendLine("<section><h2>SHOPPING LIST</h2><div class=\"shopping\">");

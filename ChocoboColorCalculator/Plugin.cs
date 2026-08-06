@@ -75,9 +75,16 @@ public sealed class Plugin : IDalamudPlugin
     {
         var start = ChocoboData.Colors[Configuration.CurrentColorIndex];
         var target = ChocoboData.Colors[Configuration.TargetColorIndex];
+        Configuration.ActivePlan = BuildPlan(start, target);
+        Configuration.LastDetectionNotice = null;
+        Configuration.Save();
+    }
+
+    private ActivePlanState BuildPlan(ChocoboColor start, ChocoboColor target)
+    {
         var result = calculator.Calculate(start, target);
 
-        Configuration.ActivePlan = new ActivePlanState
+        return new ActivePlanState
         {
             StartName = start.Name,
             TargetName = target.Name,
@@ -96,8 +103,6 @@ public sealed class Plugin : IDalamudPlugin
             Warning = result.Warning,
             Steps = result.Steps.Select(kind => new TrackedStepState { FruitKind = (int)kind }).ToList(),
         };
-        Configuration.LastDetectionNotice = null;
-        Configuration.Save();
     }
 
     internal void SetManualStep(int index, bool value)
@@ -305,5 +310,31 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration.CurrentColorIndex = Math.Clamp(Configuration.CurrentColorIndex, 0, ChocoboData.Colors.Count - 1);
         Configuration.TargetColorIndex = Math.Clamp(Configuration.TargetColorIndex, 0, ChocoboData.Colors.Count - 1);
+        if (Configuration.Version >= 2)
+            return;
+
+        var plan = Configuration.ActivePlan;
+        if (plan is not null)
+        {
+            var start = ChocoboData.Colors.FirstOrDefault(color => color.Name == plan.StartName);
+            var target = ChocoboData.Colors.FirstOrDefault(color => color.Name == plan.TargetName);
+            if (start is not null && target is not null && plan.CompletedCount == 0)
+            {
+                Configuration.ActivePlan = BuildPlan(start, target);
+            }
+            else if (target is not null)
+            {
+                plan.ClassificationMargin = calculator.ClassificationMargin(
+                    new RgbColor(plan.EndR, plan.EndG, plan.EndB),
+                    target);
+                const string migrationNote = "This in-progress route was created by an earlier calculation model and was preserved so its feed order would not change mid-route. New calculations use the refined closest-safe model.";
+                plan.Warning = string.IsNullOrWhiteSpace(plan.Warning)
+                    ? migrationNote
+                    : $"{plan.Warning} {migrationNote}";
+            }
+        }
+
+        Configuration.Version = 2;
+        Configuration.Save();
     }
 }

@@ -355,7 +355,7 @@
                                         <StackPanel><TextBlock Text="PREDICTED COLOR" Style="{StaticResource SectionLabel}" Foreground="{StaticResource BlueBrush}" /><TextBlock x:Name="PredictedColorText" FontSize="19" FontWeight="Bold" Margin="0,7,0,0" /><TextBlock x:Name="EndpointRgbText" Foreground="{StaticResource MutedBrush}" /></StackPanel>
                                     </Border>
                                     <Border Grid.Column="4" Style="{StaticResource CardStyle}" Padding="17">
-                                        <StackPanel><TextBlock Text="RELIABILITY MARGIN" Style="{StaticResource SectionLabel}" Foreground="{StaticResource GreenBrush}" /><TextBlock x:Name="MarginText" FontSize="26" FontWeight="Bold" Margin="0,7,0,0" /><TextBlock Text="distance from nearest rival" Foreground="{StaticResource MutedBrush}" /></StackPanel>
+                                        <StackPanel><TextBlock Text="BOUNDARY CLEARANCE" Style="{StaticResource SectionLabel}" Foreground="{StaticResource GreenBrush}" /><TextBlock x:Name="MarginText" FontSize="26" FontWeight="Bold" Margin="0,7,0,0" /><TextBlock Text="RGB units to nearest boundary" Foreground="{StaticResource MutedBrush}" /></StackPanel>
                                     </Border>
                                 </Grid>
 

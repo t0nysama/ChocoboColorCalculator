@@ -7,8 +7,9 @@ public sealed class RouteCalculator
 {
     private const int Lookahead = 3;
     private const int MaxSteps = 512;
-    private const int SafeSearchRadius = 20;
-    private const double MinimumReliableMargin = 5;
+    private const int InitialSearchRadius = 20;
+    private const double MinimumReliableBoundaryClearance = 3;
+    private const double NarrowBoundaryMargin = 4;
 
     private readonly IReadOnlyList<FruitKind[]> paths;
 
@@ -42,7 +43,7 @@ public sealed class RouteCalculator
                          "color is necessarily an estimate; a Han Lemon reset gives the most reliable baseline.");
         }
 
-        if (predicted.Name == target.Name && margin < 7)
+        if (predicted.Name == target.Name && margin < NarrowBoundaryMargin)
         {
             warnings.Add($"{target.Name} has a narrow color region and the exact per-fruit variance is not " +
                          "published. Do not add fruit just because no feather-growth message appeared; if the " +
@@ -64,72 +65,71 @@ public sealed class RouteCalculator
     public double ClassificationMargin(RgbColor point, ChocoboColor intended)
     {
         var intendedDistance = intended.Rgb.DistanceSquared(point);
-        var competitorDistance = ChocoboData.Colors
-            .Where(color => color.Name != intended.Name)
-            .Min(color => color.Rgb.DistanceSquared(point));
-        return Math.Sqrt(competitorDistance) - Math.Sqrt(intendedDistance);
+        var margin = double.PositiveInfinity;
+        foreach (var competitor in ChocoboData.Colors)
+        {
+            if (competitor.Name == intended.Name)
+                continue;
+
+            var centerDistance = Math.Sqrt(intended.Rgb.DistanceSquared(competitor.Rgb));
+            var signedBoundaryDistance =
+                (competitor.Rgb.DistanceSquared(point) - intendedDistance) /
+                (2d * centerDistance);
+            margin = Math.Min(margin, signedBoundaryDistance);
+        }
+
+        return margin;
     }
 
     private RgbColor FindReliableAimPoint(RgbColor start, ChocoboColor target)
     {
-        var closest = target.Rgb;
-        var closestTargetDistance = long.MaxValue;
-        var closestMargin = double.NegativeInfinity;
-        var closestCost = int.MaxValue;
-        var safest = target.Rgb;
-        var safestMargin = double.NegativeInfinity;
-        var safestTargetDistance = long.MaxValue;
-        var safestCost = int.MaxValue;
+        var selection = new AimSelection();
 
-        for (var r = FirstMatchingResidue(Math.Max(0, target.Rgb.R - SafeSearchRadius), start.R);
-             r <= Math.Min(255, target.Rgb.R + SafeSearchRadius);
+        // First find a qualifying point. The radius expands to the whole RGB cube if a
+        // color has an unusually small or offset Voronoi region.
+        for (var radius = InitialSearchRadius; !selection.HasReliable; radius = Math.Min(255, radius * 2))
+        {
+            SearchAimCube(start, target, radius, selection);
+            if (radius == 255)
+                break;
+        }
+
+        if (!selection.HasReliable)
+            return selection.HasClassified ? selection.ClosestClassified : target.Rgb;
+
+        // Once one reliable endpoint is known, no better endpoint can be farther from
+        // the swatch than its Euclidean distance. Searching that exact bound proves the
+        // selected point is the globally closest reliable point on the start lattice.
+        var exactRadius = (int)Math.Ceiling(Math.Sqrt(selection.ReliableDistance));
+        SearchAimCube(start, target, exactRadius, selection);
+        return selection.ClosestReliable;
+    }
+
+    private void SearchAimCube(RgbColor start, ChocoboColor target, int radius, AimSelection selection)
+    {
+        for (var r = FirstMatchingResidue(Math.Max(0, target.Rgb.R - radius), start.R);
+             r <= Math.Min(255, target.Rgb.R + radius);
              r += 5)
-        for (var g = FirstMatchingResidue(Math.Max(0, target.Rgb.G - SafeSearchRadius), start.G);
-             g <= Math.Min(255, target.Rgb.G + SafeSearchRadius);
+        for (var g = FirstMatchingResidue(Math.Max(0, target.Rgb.G - radius), start.G);
+             g <= Math.Min(255, target.Rgb.G + radius);
              g += 5)
-        for (var b = FirstMatchingResidue(Math.Max(0, target.Rgb.B - SafeSearchRadius), start.B);
-             b <= Math.Min(255, target.Rgb.B + SafeSearchRadius);
+        for (var b = FirstMatchingResidue(Math.Max(0, target.Rgb.B - radius), start.B);
+             b <= Math.Min(255, target.Rgb.B + radius);
              b += 5)
         {
             var candidate = new RgbColor(r, g, b);
-            if (!IsLatticeReachableWithoutClamping(start, candidate))
-                continue;
-            if (ChocoboData.NearestColor(candidate).Name != target.Name)
+            if (!IsLatticeReachableWithoutClamping(start, candidate) ||
+                ChocoboData.NearestColor(candidate).Name != target.Name)
                 continue;
 
-            var margin = ClassificationMargin(candidate, target);
             var targetDistance = candidate.DistanceSquared(target.Rgb);
+            var boundaryMargin = ClassificationMargin(candidate, target);
             var cost = EstimatedFruitCount(start, candidate);
+            selection.ConsiderClassified(candidate, targetDistance, boundaryMargin, cost);
 
-            if (targetDistance < closestTargetDistance ||
-                (targetDistance == closestTargetDistance && margin > closestMargin + 0.0001) ||
-                (targetDistance == closestTargetDistance && Math.Abs(margin - closestMargin) < 0.0001 && cost < closestCost))
-            {
-                closest = candidate;
-                closestTargetDistance = targetDistance;
-                closestMargin = margin;
-                closestCost = cost;
-            }
-
-            if (margin > safestMargin + 0.0001 ||
-                (Math.Abs(margin - safestMargin) < 0.0001 && targetDistance < safestTargetDistance) ||
-                (Math.Abs(margin - safestMargin) < 0.0001 && targetDistance == safestTargetDistance && cost < safestCost))
-            {
-                safest = candidate;
-                safestMargin = margin;
-                safestTargetDistance = targetDistance;
-                safestCost = cost;
-            }
+            if (boundaryMargin >= MinimumReliableBoundaryClearance)
+                selection.ConsiderReliable(candidate, targetDistance, boundaryMargin, cost);
         }
-
-        if (closestMargin >= MinimumReliableMargin)
-        {
-            _ = CalculateRoute(start, closest, out var endpoint, out _);
-            if (endpoint == closest)
-                return closest;
-        }
-
-        return safest;
     }
 
     private static int FirstMatchingResidue(int minimum, int reference)
@@ -281,6 +281,75 @@ public sealed class RouteCalculator
             next[^1] = fruit;
             paths.Add(next);
             BuildPaths(paths, next, remaining - 1);
+        }
+    }
+
+    private sealed class AimSelection
+    {
+        public bool HasClassified { get; private set; }
+        public RgbColor ClosestClassified { get; private set; }
+        public long ClassifiedDistance { get; private set; } = long.MaxValue;
+        public double ClassifiedMargin { get; private set; } = double.NegativeInfinity;
+        public int ClassifiedCost { get; private set; } = int.MaxValue;
+
+        public bool HasReliable { get; private set; }
+        public RgbColor ClosestReliable { get; private set; }
+        public long ReliableDistance { get; private set; } = long.MaxValue;
+        public double ReliableMargin { get; private set; } = double.NegativeInfinity;
+        public int ReliableCost { get; private set; } = int.MaxValue;
+
+        public void ConsiderClassified(RgbColor point, long distance, double margin, int cost)
+        {
+            if (!IsBetter(point, distance, margin, cost,
+                    HasClassified, ClosestClassified, ClassifiedDistance, ClassifiedMargin, ClassifiedCost))
+                return;
+
+            HasClassified = true;
+            ClosestClassified = point;
+            ClassifiedDistance = distance;
+            ClassifiedMargin = margin;
+            ClassifiedCost = cost;
+        }
+
+        public void ConsiderReliable(RgbColor point, long distance, double margin, int cost)
+        {
+            if (!IsBetter(point, distance, margin, cost,
+                    HasReliable, ClosestReliable, ReliableDistance, ReliableMargin, ReliableCost))
+                return;
+
+            HasReliable = true;
+            ClosestReliable = point;
+            ReliableDistance = distance;
+            ReliableMargin = margin;
+            ReliableCost = cost;
+        }
+
+        private static bool IsBetter(
+            RgbColor point,
+            long distance,
+            double margin,
+            int cost,
+            bool hasCurrent,
+            RgbColor currentPoint,
+            long currentDistance,
+            double currentMargin,
+            int currentCost)
+        {
+            if (!hasCurrent || distance < currentDistance)
+                return true;
+            if (distance > currentDistance)
+                return false;
+            if (margin > currentMargin + 0.0001)
+                return true;
+            if (margin < currentMargin - 0.0001)
+                return false;
+            if (cost != currentCost)
+                return cost < currentCost;
+            if (point.R != currentPoint.R)
+                return point.R < currentPoint.R;
+            if (point.G != currentPoint.G)
+                return point.G < currentPoint.G;
+            return point.B < currentPoint.B;
         }
     }
 }

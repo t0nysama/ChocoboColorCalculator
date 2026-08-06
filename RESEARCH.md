@@ -1,11 +1,11 @@
 # Research and calculation notes
 
-Checked 2026-08-02.
+Checked 2026-08-05.
 
 ## Sources
 
 - [Official patch 2.35 notes](https://na.finalfantasyxiv.com/lodestone/topics/detail/2952cde08127ad3911220b2b5744330af2f11d85): introduced the stable-feeding system, six fruits, six-hour Earth-time wait, Han Lemon reset, and early-removal cancellation.
-- [Official UI guide](https://eu.finalfantasyxiv.com/uiguide/faq/faq-chocobo/chocobo_color.html): current confirmation of fruit effects and stable behavior.
+- [Official UI guide](https://na.finalfantasyxiv.com/uiguide/faq/faq-chocobo/chocobo_color.html): current confirmation of fruit effects and stable behavior.
 - [Lulu's Tools algorithm explanation](https://ffxiv.pf-n.co/chocobo-color/about): ±5 vectors, channel clamping, Euclidean nearest-color assumption, lookahead-3 reasoning, lattice error, and documented Honey Yellow/Celeste Green → Currant Purple failures.
 - [FFXIV Chocobo Colour Calculator: Desert Yellow to Soot Black](https://ffxivchocobo.com/en/desert-yellow/soot-black): established 19-apple, 23-pear, 32-berry totals and ordered feeding route.
 - [Chocobo Dye: The Missing Manual](https://forum.square-enix.com/ffxiv/threads/189066): community experiment summary reporting approximate 3–6 point shifts and explaining that the feather-growth message indicates crossing a color window rather than whether a fruit was applied.
@@ -34,8 +34,15 @@ References disagree on Desert Yellow: the community page prose has used 216/180/
 
 1. Apply each fruit immediately and clamp every channel to `[0,255]`; fruit order is therefore retained.
 2. For every lattice-reachable endpoint, construct an exact algebraic fruit route first and order its fruit to avoid clamping. Retain lookahead 3 only as a fallback when direct ordering cannot reach the endpoint exactly.
-3. Apply one Reliable target policy to every calculation: find both the reachable endpoint closest to the published target swatch and the endpoint with the largest classification margin. Use the closest endpoint when it retains at least 5 RGB-distance units of margin and the ordered solver reaches it exactly; otherwise use the deeper endpoint. There is no alternate calculation mode that can bypass this protection.
-4. Simulate the final ordered route again and report both endpoint and nearest named color. The verifier checks all 7,225 named start/target pairs for deterministic output, exact aim-point arrival, simulation consistency, positive classification margin, and the intended named color.
+3. Apply one closest-safe target policy to every calculation. A candidate must be reachable without clamping, classify as the intended named color, and retain at least 3 RGB units of true Euclidean clearance from every named-color boundary. The 3-unit floor preserves the user-verified Soot Black endpoint (3.03 units) while eliminating weaker 2.55-unit endpoints produced by the former center-distance rule. The search expands until it finds a qualifying candidate, then searches the exact distance bound around that candidate. This proves that no closer qualifying point exists anywhere on the start color's unclamped reachable lattice.
+4. If several qualifying points are equally close to the published swatch, prefer the point with the greatest true Voronoi boundary clearance, then the fewest fruit, then a stable RGB ordering. This makes tied choices deterministic and more tolerant of hidden-value error without moving farther from the swatch.
+5. Report reliability as the true signed Euclidean distance from the selected endpoint to the nearest named-color Voronoi boundary. The earlier center-distance difference was adequate as a threshold but was not a geometric boundary distance.
+6. Simulate the final ordered route again and report both endpoint and nearest named color. The standard verifier checks all 7,225 named start/target pairs for deterministic output, exact aim-point arrival, simulation consistency, positive boundary clearance, intended classification, and zero channel clamping.
+7. The deep verifier independently enumerates 2,856,817 unclamped lattice-reachable RGB points across all 85 named starting colors. It proves that all 7,140 non-self routes select the globally closest unclamped endpoint satisfying the 3-unit boundary rule. The audit corrected both unnecessarily distant fallback endpoints and endpoints that were geometrically closer to a color boundary than the successful Soot Black reference route.
+
+For 116 of the 7,140 non-self pairs, the mathematically closest lattice point to the published swatch has less than 3 units of boundary clearance, so the solver deliberately uses the next closest qualifying point. This is the only reason a selected endpoint is not the absolute closest lattice point. The weakest selected endpoint has 3.003 units of true clearance; Desert Yellow to Soot Black has 3.032.
+
+Intentional channel clamping can sometimes reduce the number of fruit in a theoretical fixed-step route, but a clamped fruit has only a partial channel effect and makes an already unpublished, variable process more order-sensitive. Because this project optimizes result accuracy rather than minimum fruit count, the production solver rejects clamped routes. The verifier confirms that none of the 7,225 generated routes hits an RGB wall.
 
 The nearest-color rule is a well-supported community model, not an officially published Square Enix formula. The UI describes that honestly.
 
@@ -43,7 +50,11 @@ The nearest-color rule is a well-supported community model, not an officially pu
 
 The earlier Safe center policy maximized only the theoretical nearest-color margin. From a Han Lemon reset it selected RGB `44/35/42`, producing 19 Xelphatol apples, 22 Mamook pears, and 32 O'Ghomoro berries. That moved farther from the published Soot Black swatch and disagreed with the established recipe.
 
-Reliable target selects reachable RGB `39/40/37`, producing 19 apples, 23 pears, and 32 berries. This endpoint is close to the published Soot Black swatch (`43/41/35`), retains a positive 5.47 classification margin, and reproduces the long-established recipe. Because the game's exact hidden values and per-fruit variance are not published, this is a material accuracy improvement rather than a one-attempt guarantee.
+Closest-safe target selects reachable RGB `39/40/37`, producing 19 apples, 23 pears, and 32 berries. This endpoint is close to the published Soot Black swatch (`43/41/35`), retains 3.03 RGB units of true boundary clearance, and reproduces the long-established recipe. Because the game's exact hidden values and per-fruit variance are not published, this is a material accuracy improvement rather than a one-attempt guarantee.
+
+## What cannot be guaranteed
+
+Square Enix documents the direction of each fruit, the six-hour stable cycle, and the Han Lemon reset, but does not publish the hidden RGB arithmetic or a live RGB value. Community experiments support the +/-5 planning model while also reporting per-feed variation. A non-Desert-Yellow named starting color can represent many hidden RGB points inside the same named-color region. Consequently, no route planner can truthfully guarantee every first attempt. This project maximizes deterministic accuracy under the best-supported model, recommends a Han Lemon baseline, never treats the feather-growth message as a failed-fruit signal, and supports short corrections from the actual resulting named color.
 
 ## Automatic feed detection
 

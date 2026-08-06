@@ -57,6 +57,17 @@ foreach (var target in ChocoboData.Colors)
         failures.Add($"{start.Name} -> {target.Name}: repeated calculation is not deterministic.");
     if (start.Name == target.Name && result.Steps.Count != 0)
         failures.Add($"{start.Name} -> itself should require no fruit.");
+    var routeRgb = start.Rgb;
+    foreach (var kind in result.Steps)
+    {
+        var fruit = ChocoboData.Fruit(kind);
+        if (fruit.WouldClamp(routeRgb))
+        {
+            failures.Add($"{start.Name} -> {target.Name}: route clamps {kind} at {routeRgb}.");
+            break;
+        }
+        routeRgb = fruit.Apply(routeRgb);
+    }
     longest = Math.Max(longest, result.Steps.Count);
     if (start.Name != target.Name && result.ClassificationMargin < minimumMargin)
     {
@@ -131,15 +142,18 @@ Require(!pdfText.Contains("(STATUS)", StringComparison.Ordinal), "PDF export mus
 Require(!pdfText.Contains("(AUTO-DETECTED)", StringComparison.Ordinal), "PDF export must not contain saved step statuses.");
 Require(pdfText.EndsWith("%%EOF\n", StringComparison.Ordinal), "PDF export is missing its end marker.");
 
-if (args.Length == 1)
+if (args.Length == 1 && !string.Equals(args[0], "--deep-audit", StringComparison.Ordinal))
 {
     var exportDirectory = Path.GetFullPath(args[0]);
     foreach (var format in Enum.GetValues<RouteExportFormat>())
         Console.WriteLine($"Created export sample: {RouteExporter.Export(exportDocument, format, exportDirectory)}");
 }
 
+if (args.Contains("--deep-audit", StringComparer.Ordinal))
+    DeepAccuracyAudit.Run(calculator);
+
 Console.WriteLine($"Verified {pairCount:N0} color pairs; longest reliable route: {longest} fruits.");
-Console.WriteLine($"Smallest endpoint classification margin: {minimumMargin:F2} ({minimumMarginPair}).");
+Console.WriteLine($"Smallest true boundary clearance: {minimumMargin:F2} RGB units ({minimumMarginPair}).");
 Console.WriteLine(
     $"Desert Yellow -> Soot Black: {desertToSoot.Steps.Count} fruits, " +
     $"aim {desertToSoot.AimPoint}, endpoint {desertToSoot.Endpoint}, " +

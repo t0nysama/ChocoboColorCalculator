@@ -312,7 +312,7 @@ public sealed class MainWindow : Window, IDisposable
             ImGui.TableNextColumn();
             DrawMetricCard("PREDICTED COLOR", plan.PredictedColorName, $"RGB {plan.EndR}/{plan.EndG}/{plan.EndB}", AccentBlue);
             ImGui.TableNextColumn();
-            DrawMetricCard("RELIABILITY MARGIN", plan.ClassificationMargin.ToString("F1"), "distance from nearest rival", Success);
+            DrawMetricCard("BOUNDARY CLEARANCE", plan.ClassificationMargin.ToString("F1"), "RGB units to nearest boundary", Success);
             ImGui.EndTable();
         }
 
@@ -1003,7 +1003,7 @@ public sealed class MainWindow : Window, IDisposable
 
         DrawNotice(
             "WHY RELIABLE TARGET?",
-            "Every one of the 7,225 named start/target combinations uses the same reliable policy. It stays close to the published swatch when safely possible, falls back to a deeper point near tight neighbors, and verifies that the ordered route reaches the selected endpoint exactly.",
+            "Every one of the 7,225 named start/target combinations uses the same reliable policy. It proves the selected endpoint is the closest reachable point that clears the safety threshold, then verifies the ordered route reaches it exactly without channel clamping.",
             AccentGold,
             Glass);
         ImGui.Dummy(new Vector2(1, 6) * ImGuiHelpers.GlobalScale);

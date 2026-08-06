@@ -5,6 +5,7 @@ namespace ChocoboColorCalculator.Desktop;
 
 public sealed class DesktopState
 {
+    public int CalculationModelVersion { get; set; }
     public int CurrentColorIndex { get; set; }
     public int TargetColorIndex { get; set; } = 6;
     public DesktopRouteState? ActiveRoute { get; set; }
@@ -66,14 +67,16 @@ public static class DesktopStateStore
         try
         {
             if (!File.Exists(FilePath))
-                return new DesktopState();
-            return JsonSerializer.Deserialize<DesktopState>(File.ReadAllText(FilePath), JsonOptions) ?? new DesktopState();
+                return NewState();
+            return JsonSerializer.Deserialize<DesktopState>(File.ReadAllText(FilePath), JsonOptions) ?? NewState();
         }
         catch
         {
-            return new DesktopState();
+            return NewState();
         }
     }
+
+    private static DesktopState NewState() => new() { CalculationModelVersion = 2 };
 
     public static void Save(DesktopState state)
     {

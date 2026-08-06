@@ -32,7 +32,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = this;
-        currentVersion = GetType().Assembly.GetName().Version ?? new Version(1, 0, 2, 0);
+        currentVersion = GetType().Assembly.GetName().Version ?? new Version(1, 1, 0, 0);
         CurrentVersionHeaderText.Text = $"VERSION {currentVersion.ToString(3)}";
         UpdateCurrentVersionText.Text = currentVersion.ToString(3);
         DesktopUpdateService.CleanupOldUpdates();
@@ -42,6 +42,7 @@ public partial class MainWindow : Window
         state = DesktopStateStore.Load();
         state.CurrentColorIndex = Math.Clamp(state.CurrentColorIndex, 0, allColors.Count - 1);
         state.TargetColorIndex = Math.Clamp(state.TargetColorIndex, 0, allColors.Count - 1);
+        UpgradeSavedCalculationModel();
 
         CurrentColorCombo.ItemsSource = allColors;
         TargetColorCombo.ItemsSource = allColors;
@@ -125,8 +126,16 @@ public partial class MainWindow : Window
     {
         var start = ChocoboData.Colors[state.CurrentColorIndex];
         var target = ChocoboData.Colors[state.TargetColorIndex];
+        state.ActiveRoute = BuildRoute(start, target);
+        RebuildActiveRoute();
+        SaveState();
+        SetStatus($"Calculated {start.Name} to {target.Name}: {state.ActiveRoute.Steps.Count} ordered feeds.", false);
+    }
+
+    private DesktopRouteState BuildRoute(ChocoboColor start, ChocoboColor target)
+    {
         var result = calculator.Calculate(start, target);
-        state.ActiveRoute = new DesktopRouteState
+        return new DesktopRouteState
         {
             StartName = start.Name,
             TargetName = target.Name,
@@ -148,9 +157,36 @@ public partial class MainWindow : Window
             CreatedAtUtc = DateTime.UtcNow,
             Steps = result.Steps.Select(kind => new DesktopStepState { FruitKind = (int)kind }).ToList(),
         };
-        RebuildActiveRoute();
+    }
+
+    private void UpgradeSavedCalculationModel()
+    {
+        if (state.CalculationModelVersion >= 2)
+            return;
+
+        var route = state.ActiveRoute;
+        if (route is not null)
+        {
+            var start = ChocoboData.Colors.FirstOrDefault(color => color.Name == route.StartName);
+            var target = ChocoboData.Colors.FirstOrDefault(color => color.Name == route.TargetName);
+            if (start is not null && target is not null && route.Steps.All(step => !step.IsComplete))
+            {
+                state.ActiveRoute = BuildRoute(start, target);
+            }
+            else if (target is not null)
+            {
+                route.ClassificationMargin = calculator.ClassificationMargin(
+                    new RgbColor(route.EndR, route.EndG, route.EndB),
+                    target);
+                const string migrationNote = "This in-progress route was created by an earlier calculation model and was preserved so its feed order would not change mid-route. New calculations use the refined closest-safe model.";
+                route.Warning = string.IsNullOrWhiteSpace(route.Warning)
+                    ? migrationNote
+                    : $"{route.Warning} {migrationNote}";
+            }
+        }
+
+        state.CalculationModelVersion = 2;
         SaveState();
-        SetStatus($"Calculated {start.Name} to {target.Name}: {result.Steps.Count} ordered feeds.", false);
     }
 
     private void SwapButton_Click(object sender, RoutedEventArgs e)
