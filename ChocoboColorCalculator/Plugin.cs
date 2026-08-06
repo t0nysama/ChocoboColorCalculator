@@ -36,6 +36,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly MainWindow mainWindow;
     private DateTime lastDetectionUtc = DateTime.MinValue;
     private FruitKind? lastDetectedFruit;
+    private DetectionSource? lastDetectionSource;
 
     internal Configuration Configuration { get; }
 
@@ -226,7 +227,7 @@ public sealed class Plugin : IDalamudPlugin
                 parameters.Add(value.ToString());
         }
 
-        DetectAndTrackFruit(parameters);
+        DetectAndTrackFruit(parameters, DetectionSource.StructuredLog);
     }
 
     private void OnChatMessage(IHandleableChatMessage message)
@@ -234,19 +235,19 @@ public sealed class Plugin : IDalamudPlugin
         if (!Configuration.AutoTrackingEnabled || message.LogKind != ChocoboSnackLogKind)
             return;
 
-        DetectAndTrackFruit([message.Message.TextValue]);
+        DetectAndTrackFruit([message.Message.TextValue], DetectionSource.RenderedChat);
     }
 
-    private void DetectAndTrackFruit(IEnumerable<string> textFragments)
+    private void DetectAndTrackFruit(IEnumerable<string> textFragments, DetectionSource source)
     {
         var detected = FruitMessageDetector.Detect(textFragments, LocalizedFruitName);
         if (detected is null)
             return;
 
-        TrackDetectedFruit(detected.Value);
+        TrackDetectedFruit(detected.Value, source);
     }
 
-    private void TrackDetectedFruit(FruitKind detected)
+    private void TrackDetectedFruit(FruitKind detected, DetectionSource source)
     {
         var plan = Configuration.ActivePlan;
         var next = plan?.NextStepIndex ?? -1;
@@ -254,9 +255,15 @@ public sealed class Plugin : IDalamudPlugin
             return;
 
         var now = DateTime.UtcNow;
-        if (lastDetectedFruit == detected && now - lastDetectionUtc < DetectionDebounce)
+        // Dalamud can expose one feed through both the structured log and rendered
+        // chat events. Suppress only that cross-source duplicate. Consecutive feeds
+        // of the same fruit are legitimate route steps and must each advance once.
+        if (lastDetectedFruit == detected &&
+            lastDetectionSource != source &&
+            now - lastDetectionUtc < DetectionDebounce)
             return;
         lastDetectedFruit = detected;
+        lastDetectionSource = source;
         lastDetectionUtc = now;
 
         var expected = (FruitKind)plan.Steps[next].FruitKind;
@@ -310,7 +317,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration.CurrentColorIndex = Math.Clamp(Configuration.CurrentColorIndex, 0, ChocoboData.Colors.Count - 1);
         Configuration.TargetColorIndex = Math.Clamp(Configuration.TargetColorIndex, 0, ChocoboData.Colors.Count - 1);
-        if (Configuration.Version >= 2)
+        if (Configuration.Version >= 3)
             return;
 
         var plan = Configuration.ActivePlan;
@@ -327,14 +334,20 @@ public sealed class Plugin : IDalamudPlugin
                 plan.ClassificationMargin = calculator.ClassificationMargin(
                     new RgbColor(plan.EndR, plan.EndG, plan.EndB),
                     target);
-                const string migrationNote = "This in-progress route was created by an earlier calculation model and was preserved so its feed order would not change mid-route. New calculations use the refined closest-safe model.";
+                const string migrationNote = "This in-progress route was created by an earlier calculation model and was preserved so its feed order would not change mid-route. New Soot Black calculations use the precision-interleaved route.";
                 plan.Warning = string.IsNullOrWhiteSpace(plan.Warning)
                     ? migrationNote
                     : $"{plan.Warning} {migrationNote}";
             }
         }
 
-        Configuration.Version = 2;
+        Configuration.Version = 3;
         Configuration.Save();
+    }
+
+    private enum DetectionSource
+    {
+        StructuredLog,
+        RenderedChat,
     }
 }

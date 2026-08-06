@@ -142,7 +142,7 @@ Require(!pdfText.Contains("(STATUS)", StringComparison.Ordinal), "PDF export mus
 Require(!pdfText.Contains("(AUTO-DETECTED)", StringComparison.Ordinal), "PDF export must not contain saved step statuses.");
 Require(pdfText.EndsWith("%%EOF\n", StringComparison.Ordinal), "PDF export is missing its end marker.");
 
-if (args.Length == 1 && !string.Equals(args[0], "--deep-audit", StringComparison.Ordinal))
+if (args.Length == 1 && !args[0].StartsWith("--", StringComparison.Ordinal))
 {
     var exportDirectory = Path.GetFullPath(args[0]);
     foreach (var format in Enum.GetValues<RouteExportFormat>())
@@ -151,6 +151,9 @@ if (args.Length == 1 && !string.Equals(args[0], "--deep-audit", StringComparison
 
 if (args.Contains("--deep-audit", StringComparer.Ordinal))
     DeepAccuracyAudit.Run(calculator);
+
+if (args.Contains("--soot-audit", StringComparer.Ordinal))
+    SootBlackAudit.Run(calculator);
 
 Console.WriteLine($"Verified {pairCount:N0} color pairs; longest reliable route: {longest} fruits.");
 Console.WriteLine($"Smallest true boundary clearance: {minimumMargin:F2} RGB units ({minimumMarginPair}).");

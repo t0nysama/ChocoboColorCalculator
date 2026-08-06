@@ -3,18 +3,18 @@
     "Author": "Null",
     "Name": "Chocobo Color Calculator",
     "InternalName": "ChocoboColorCalculator",
-    "AssemblyVersion": "0.7.0.0",
+    "AssemblyVersion": "0.8.0.0",
     "RepoUrl": "https://github.com/t0nysama/ChocoboColorCalculator",
     "IconUrl": "https://raw.githubusercontent.com/t0nysama/ChocoboColorCalculator/79e26fa213c3934ec5d9246cbffc6fdb14423809/images/icon.png",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 15,
     "Punchline": "Plan and track an accurate chocobo color feeding route in game.",
     "Description": "Calculates and tracks ordered fruit routes between companion chocobo colors.",
-    "Changelog": "Accuracy overhaul: every route now uses the globally closest unclamped endpoint with at least 3 RGB units of true color-boundary clearance. An exhaustive 2,856,817-point audit verified all 7,225 color pairs and confirmed every ordered route reaches its aim without channel clamping. The proven 19/23/32 Desert Yellow to Soot Black recipe is preserved.",
+    "Changelog": "Soot Black precision update: preserves the proven 19/23/32 Han Lemon reset recipe, fully interleaves its 74 feeds, and selects hidden-start-tolerant Soot endpoints for correction routes. A focused audit verified all 85 starts plus 110,803 hidden-RGB scenarios with zero clamping. Same-fruit automatic tracking is also fixed.",
     "IsHide": false,
     "IsTestingExclusive": false,
     "DownloadLinkInstall": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
     "DownloadLinkUpdate": "https://github.com/t0nysama/ChocoboColorCalculator/releases/latest/download/latest.zip",
-    "LastUpdate": "1785998768"
+    "LastUpdate": "1786000397"
   }
 ]

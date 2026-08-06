@@ -12,6 +12,7 @@ public sealed class RouteCalculator
     private const double NarrowBoundaryMargin = 4;
 
     private readonly IReadOnlyList<FruitKind[]> paths;
+    private readonly Dictionary<string, RgbColor> robustSootAimCache = new(StringComparer.Ordinal);
 
     public RouteCalculator()
     {
@@ -24,9 +25,12 @@ public sealed class RouteCalculator
     {
         var aim = start.Name == target.Name
             ? start.Rgb
-            : FindReliableAimPoint(start.Rgb, target);
+            : target.Name == "Soot Black" && start.Name != "Desert Yellow"
+                ? FindRobustSootAimPoint(start, target)
+                : FindReliableAimPoint(start.Rgb, target);
 
-        var steps = CalculateRoute(start.Rgb, aim, out var endpoint, out var usedFallback);
+        var preferInterleaving = target.Name == "Soot Black";
+        var steps = CalculateRoute(start.Rgb, aim, preferInterleaving, out var endpoint, out var usedFallback);
         var predicted = ChocoboData.NearestColor(endpoint);
         var margin = ClassificationMargin(endpoint, target);
         var warnings = new List<string>();
@@ -48,6 +52,13 @@ public sealed class RouteCalculator
             warnings.Add($"{target.Name} has a narrow color region and the exact per-fruit variance is not " +
                          "published. Do not add fruit just because no feather-growth message appeared; if the " +
                          "result misses, calculate a correction from the resulting color instead of resetting.");
+        }
+
+        if (target.Name == "Soot Black" && start.Name != target.Name)
+        {
+            warnings.Add(start.Name == "Desert Yellow"
+                ? "Soot Black precision route: from a confirmed Han Lemon reset, feed exactly 19 Xelphatol apples, 23 Mamook pears, and 32 O'Ghomoro berries in the interleaved order shown. Wait for each feed to register, and never add fruit because a feather-growth message did not appear. Ink Blue and other nearby colors are misses; if one occurs, select the actual result and calculate its shorter correction route."
+                : "Soot Black is a particularly tight target. Follow the interleaved order exactly and wait for each feed to register. If the result is Ink Blue or any other nearby color, select that actual color and calculate its correction route rather than repeating this route.");
         }
 
         var warning = warnings.Count == 0 ? null : string.Join(" ", warnings);
@@ -105,6 +116,87 @@ public sealed class RouteCalculator
         return selection.ClosestReliable;
     }
 
+    private RgbColor FindRobustSootAimPoint(ChocoboColor start, ChocoboColor target)
+    {
+        if (robustSootAimCache.TryGetValue(start.Name, out var cached))
+            return cached;
+
+        var offsets = NamedColorOffsets(start, 5);
+        var fallback = FindReliableAimPoint(start.Rgb, target);
+        var best = fallback;
+        var bestCoverage = SootCoverage(fallback, offsets, target);
+        var bestDistance = fallback.DistanceSquared(target.Rgb);
+        var bestMargin = ClassificationMargin(fallback, target);
+        var bestCost = EstimatedFruitCount(start.Rgb, fallback);
+
+        // A non-reset named color does not reveal its exact hidden RGB value. For
+        // Soot Black, favor the reachable endpoint that remains Soot Black across
+        // the largest +/-5 neighborhood around that named starting swatch.
+        for (var r = FirstMatchingResidue(Math.Max(0, target.Rgb.R - InitialSearchRadius), start.Rgb.R);
+             r <= Math.Min(255, target.Rgb.R + InitialSearchRadius);
+             r += 5)
+        for (var g = FirstMatchingResidue(Math.Max(0, target.Rgb.G - InitialSearchRadius), start.Rgb.G);
+             g <= Math.Min(255, target.Rgb.G + InitialSearchRadius);
+             g += 5)
+        for (var b = FirstMatchingResidue(Math.Max(0, target.Rgb.B - InitialSearchRadius), start.Rgb.B);
+             b <= Math.Min(255, target.Rgb.B + InitialSearchRadius);
+             b += 5)
+        {
+            var candidate = new RgbColor(r, g, b);
+            if (!IsLatticeReachableWithoutClamping(start.Rgb, candidate) ||
+                ChocoboData.NearestColor(candidate).Name != target.Name)
+                continue;
+
+            var margin = ClassificationMargin(candidate, target);
+            if (margin < MinimumReliableBoundaryClearance)
+                continue;
+
+            var coverage = SootCoverage(candidate, offsets, target);
+            var distance = candidate.DistanceSquared(target.Rgb);
+            var cost = EstimatedFruitCount(start.Rgb, candidate);
+            if (coverage < bestCoverage ||
+                (coverage == bestCoverage && distance > bestDistance) ||
+                (coverage == bestCoverage && distance == bestDistance && margin < bestMargin - 0.0001) ||
+                (coverage == bestCoverage && distance == bestDistance &&
+                 Math.Abs(margin - bestMargin) < 0.0001 && cost >= bestCost))
+                continue;
+
+            best = candidate;
+            bestCoverage = coverage;
+            bestDistance = distance;
+            bestMargin = margin;
+            bestCost = cost;
+        }
+
+        robustSootAimCache[start.Name] = best;
+        return best;
+    }
+
+    private static IReadOnlyList<RgbColor> NamedColorOffsets(ChocoboColor color, int radius)
+    {
+        var offsets = new List<RgbColor>();
+        for (var dr = -radius; dr <= radius; dr++)
+        for (var dg = -radius; dg <= radius; dg++)
+        for (var db = -radius; db <= radius; db++)
+        {
+            var actual = new RgbColor(color.Rgb.R + dr, color.Rgb.G + dg, color.Rgb.B + db);
+            if (actual.R is < 0 or > 255 || actual.G is < 0 or > 255 || actual.B is < 0 or > 255)
+                continue;
+            if (ChocoboData.NearestColor(actual).Name == color.Name)
+                offsets.Add(new RgbColor(dr, dg, db));
+        }
+        return offsets;
+    }
+
+    private static int SootCoverage(
+        RgbColor endpoint,
+        IReadOnlyList<RgbColor> offsets,
+        ChocoboColor target) => offsets.Count(offset =>
+        ChocoboData.NearestColor(new RgbColor(
+            endpoint.R + offset.R,
+            endpoint.G + offset.G,
+            endpoint.B + offset.B).Clamp()).Name == target.Name);
+
     private void SearchAimCube(RgbColor start, ChocoboColor target, int radius, AimSelection selection)
     {
         for (var r = FirstMatchingResidue(Math.Max(0, target.Rgb.R - radius), start.R);
@@ -141,6 +233,7 @@ public sealed class RouteCalculator
     private IReadOnlyList<FruitKind> CalculateRoute(
         RgbColor start,
         RgbColor aim,
+        bool preferInterleaving,
         out RgbColor endpoint,
         out bool usedFallback)
     {
@@ -153,7 +246,7 @@ public sealed class RouteCalculator
 
         if (IsLatticeReachableWithoutClamping(start, aim))
         {
-            var directRoute = BuildAlgebraicRoute(start, aim);
+            var directRoute = BuildAlgebraicRoute(start, aim, preferInterleaving);
             var directEndpoint = Simulate(start, directRoute);
             if (directEndpoint == aim)
             {
@@ -200,7 +293,7 @@ public sealed class RouteCalculator
         if (current != aim && IsLatticeReachableWithoutClamping(current, aim))
         {
             usedFallback = true;
-            foreach (var fruit in BuildAlgebraicRoute(current, aim))
+            foreach (var fruit in BuildAlgebraicRoute(current, aim, preferInterleaving))
             {
                 steps.Add(fruit);
                 current = ChocoboData.Fruit(fruit).Apply(current);
@@ -211,7 +304,10 @@ public sealed class RouteCalculator
         return steps;
     }
 
-    private static IReadOnlyList<FruitKind> BuildAlgebraicRoute(RgbColor start, RgbColor target)
+    private static IReadOnlyList<FruitKind> BuildAlgebraicRoute(
+        RgbColor start,
+        RgbColor target,
+        bool preferInterleaving = false)
     {
         var dx = (target.R - start.R) / 5;
         var dy = (target.G - start.G) / 5;
@@ -229,6 +325,9 @@ public sealed class RouteCalculator
             signed[2] >= 0 ? FruitKind.OGhomoroBerries : FruitKind.CieldalaesPineapple,
         };
         var remaining = signed.Select(Math.Abs).ToArray();
+        var totals = remaining.ToArray();
+        var used = new int[3];
+        var totalCount = totals.Sum();
         var route = new List<FruitKind>(remaining.Sum());
         var current = start;
 
@@ -237,11 +336,15 @@ public sealed class RouteCalculator
             var choice = Enumerable.Range(0, 3)
                 .Where(i => remaining[i] > 0)
                 .OrderBy(i => ChocoboData.Fruit(kinds[i]).WouldClamp(current))
+                .ThenByDescending(i => preferInterleaving
+                    ? ((route.Count + 1d) * totals[i] / totalCount) - used[i]
+                    : 0d)
                 .ThenBy(i => ChocoboData.Fruit(kinds[i]).Apply(current).DistanceSquared(target))
                 .First();
             route.Add(kinds[choice]);
             current = ChocoboData.Fruit(kinds[choice]).Apply(current);
             remaining[choice]--;
+            used[choice]++;
         }
 
         return route;

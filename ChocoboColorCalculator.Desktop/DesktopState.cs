@@ -76,7 +76,7 @@ public static class DesktopStateStore
         }
     }
 
-    private static DesktopState NewState() => new() { CalculationModelVersion = 2 };
+    private static DesktopState NewState() => new() { CalculationModelVersion = 3 };
 
     public static void Save(DesktopState state)
     {

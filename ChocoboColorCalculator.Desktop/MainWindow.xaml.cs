@@ -161,7 +161,7 @@ public partial class MainWindow : Window
 
     private void UpgradeSavedCalculationModel()
     {
-        if (state.CalculationModelVersion >= 2)
+        if (state.CalculationModelVersion >= 3)
             return;
 
         var route = state.ActiveRoute;
@@ -178,14 +178,14 @@ public partial class MainWindow : Window
                 route.ClassificationMargin = calculator.ClassificationMargin(
                     new RgbColor(route.EndR, route.EndG, route.EndB),
                     target);
-                const string migrationNote = "This in-progress route was created by an earlier calculation model and was preserved so its feed order would not change mid-route. New calculations use the refined closest-safe model.";
+                const string migrationNote = "This in-progress route was created by an earlier calculation model and was preserved so its feed order would not change mid-route. New Soot Black calculations use the precision-interleaved route.";
                 route.Warning = string.IsNullOrWhiteSpace(route.Warning)
                     ? migrationNote
                     : $"{route.Warning} {migrationNote}";
             }
         }
 
-        state.CalculationModelVersion = 2;
+        state.CalculationModelVersion = 3;
         SaveState();
     }
 

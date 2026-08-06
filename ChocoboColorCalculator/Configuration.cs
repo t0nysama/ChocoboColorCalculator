@@ -5,7 +5,7 @@ namespace ChocoboColorCalculator;
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 2;
+    public int Version { get; set; } = 3;
     public int CurrentColorIndex { get; set; }
     public int TargetColorIndex { get; set; } = 6;
     public bool AutoTrackingEnabled { get; set; } = true;

@@ -11,7 +11,7 @@ The application is self-contained. It does not require XIVLauncher, Dalamud,
 or a separate .NET installation.
 
 FEATURES
-- The same globally audited closest-safe route engine used by the Dalamud plugin.
+- The same audited closest-safe and Soot Black precision engine used by the Dalamud plugin.
 - Searchable current and desired color selectors.
 - Shopping list, next-feed guidance, and a complete RGB route table.
 - Manual checkboxes, Confirm Next, Undo, Reset, and saved progress.
@@ -22,11 +22,13 @@ FEATURES
 
 ACCURACY
 Every named color pair is checked against the accepted +/-5 RGB model. The
-engine chooses the closest unclamped endpoint that clears the established
-safety threshold, orders every fruit without channel clamping, and reports the
-true distance to the nearest named-color boundary. Square Enix does not expose
-the live hidden RGB value or publish the exact formula, so a Han Lemon reset to
-Desert Yellow remains the most reliable baseline.
+engine chooses reliable unclamped endpoints, orders every fruit without channel
+clamping, and reports the true distance to the nearest named-color boundary.
+Soot Black corrections additionally optimize for hidden starting-RGB uncertainty,
+while the established 19/23/32 Han Lemon reset recipe remains intact and fully
+interleaved. Ink Blue and every other neighboring result are treated as misses.
+Square Enix does not expose the live hidden RGB value or publish the exact
+formula, so a Han Lemon reset to Desert Yellow remains the most reliable baseline.
 
 IMPORTANT DIFFERENCE
 Automatic feed detection requires Dalamud's in-game event services and is not
